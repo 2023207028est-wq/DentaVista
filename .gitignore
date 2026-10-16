@@ -1,0 +1,22 @@
+# Compilación
+target/
+dist/
+build/staging/
+*.class
+
+# Base de datos local (se crea sola con datos de demostración)
+*.db
+
+# IDE y sistema
+.idea/
+*.iml
+.vscode/
+*.log
+hs_err_pid*
+Thumbs.db
+Desktop.ini
+~$*
+
+# Ejecutables generados (se publican como Release, no en el código)
+dist-nuevo/
+*.zip

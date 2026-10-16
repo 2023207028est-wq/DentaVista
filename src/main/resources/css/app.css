@@ -1,0 +1,993 @@
+/* =====================================================================
+   DentaVista — tema sobre AtlantaFX Primer (claro / oscuro).
+   Los colores de interfaz usan los tokens -color-* del tema; aquí solo se
+   redefine el acento (turquesa clínico) y la paleta propia de la marca.
+   ===================================================================== */
+
+.root {
+    -color-fg-on-emphasis: white;
+    -dv-marca: #0d9488;
+    -dv-marca-oscura: #0f766e;
+    -dv-marca-suave: #ccfbf1;
+    /* Menú lateral en modo claro (el modo oscuro lo redefine en .app.dark). */
+    -dv-panel: #ffffff;
+    -dv-panel-2: #f1f5f9;
+    -dv-panel-borde: #e2e8f0;
+    -dv-panel-texto: #334155;
+    -dv-panel-tenue: #64748b;
+    -dv-panel-fuerte: #0f172a;
+    -dv-panel-seccion: #94a3b8;
+    -dv-panel-acento: #0d9488;
+    -dv-peligro: #dc2626;
+    -dv-alerta: #d97706;
+    -fx-font-family: "Segoe UI", "Inter", system;
+}
+
+.app {
+    -color-accent-fg: #0f766e;
+    -color-accent-emphasis: #0d9488;
+    -color-accent-muted: rgba(13, 148, 136, 0.40);
+    -color-accent-subtle: #e6faf7;
+    -fx-background-color: -color-bg-subtle;
+    -fx-font-size: 13px;
+}
+
+.app.dark {
+    -dv-panel: #0b1220;
+    -dv-panel-2: #111b2e;
+    -dv-panel-borde: #1e2a40;
+    -dv-panel-texto: #cbd5e1;
+    -dv-panel-tenue: #7c8aa3;
+    -dv-panel-fuerte: white;
+    -dv-panel-seccion: #55637a;
+    -dv-panel-acento: #2dd4bf;
+    -color-accent-fg: #2dd4bf;
+    -color-accent-emphasis: #14b8a6;
+    -color-accent-muted: rgba(45, 212, 191, 0.40);
+    -color-accent-subtle: rgba(45, 212, 191, 0.12);
+    -dv-marca-suave: rgba(45, 212, 191, 0.15);
+}
+
+/* ============================ MENU LATERAL ============================ */
+
+.sidebar {
+    -fx-background-color: -dv-panel;
+    -fx-border-color: transparent -dv-panel-borde transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 22 14 18 14;
+    -fx-spacing: 4;
+    -fx-min-width: 232;
+    -fx-pref-width: 232;
+    -fx-max-width: 232;
+}
+
+.marca {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 11;
+    -fx-padding: 0 6 22 6;
+}
+
+.marca-titulo {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -dv-panel-fuerte;
+}
+
+.marca-titulo-3d {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -dv-panel-acento;
+}
+
+.marca-subtitulo {
+    -fx-font-size: 11px;
+    -fx-text-fill: -dv-panel-tenue;
+}
+
+.nav-seccion {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -dv-panel-seccion;
+    -fx-padding: 14 0 6 12;
+}
+
+.sidebar .nav-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 10;
+    -fx-border-width: 0;
+    -fx-padding: 10 12 10 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 12;
+    -fx-text-fill: -dv-panel-texto;
+    -fx-font-size: 13.5px;
+    -fx-cursor: hand;
+    -fx-max-width: infinity;
+}
+
+.sidebar .nav-item .ikonli-font-icon {
+    -fx-icon-color: -dv-panel-tenue;
+    -fx-icon-size: 18px;
+}
+
+.sidebar .nav-item:hover {
+    -fx-background-color: -dv-panel-2;
+    -fx-text-fill: -dv-panel-fuerte;
+}
+
+.sidebar .nav-item:selected {
+    -fx-background-color: linear-gradient(to right, rgba(20, 184, 166, 0.22), rgba(20, 184, 166, 0.05));
+    -fx-text-fill: -dv-panel-fuerte;
+    -fx-font-weight: bold;
+}
+
+.sidebar .nav-item:selected .ikonli-font-icon {
+    -fx-icon-color: -dv-panel-acento;
+}
+
+.tarjeta-usuario {
+    -fx-background-color: -dv-panel-2;
+    -fx-background-radius: 12;
+    -fx-padding: 12 10 8 12;
+    -fx-spacing: 8;
+}
+
+.tarjeta-usuario .nombre {
+    -fx-text-fill: -dv-panel-fuerte;
+    -fx-font-weight: bold;
+    -fx-font-size: 12.5px;
+}
+
+.tarjeta-usuario .rol {
+    -fx-text-fill: -dv-panel-tenue;
+    -fx-font-size: 11px;
+}
+
+.sidebar .boton-panel {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 5 8 5 8;
+    -fx-cursor: hand;
+    -fx-text-fill: -dv-panel-tenue;
+    -fx-font-size: 12px;
+    -fx-graphic-text-gap: 6;
+}
+
+.sidebar .boton-panel:hover {
+    -fx-text-fill: -dv-panel-fuerte;
+}
+
+.sidebar .boton-panel .ikonli-font-icon {
+    -fx-icon-color: -dv-panel-tenue;
+    -fx-icon-size: 16px;
+}
+
+.sidebar .boton-panel:hover {
+    -fx-background-color: -dv-panel-borde;
+}
+
+.sidebar .boton-panel:hover .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+
+.clinica-pie {
+    -fx-text-fill: -dv-panel-seccion;
+    -fx-font-size: 10.5px;
+    -fx-padding: 8 6 0 6;
+}
+
+/* ============================== CONTENIDO ============================== */
+
+.contenido {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.pagina {
+    -fx-padding: 26 30 26 30;
+    -fx-spacing: 18;
+}
+
+.titulo-pagina {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.subtitulo-pagina {
+    -fx-font-size: 13px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.tarjeta {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 14;
+    -fx-border-color: -color-border-muted;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-padding: 18;
+    -fx-spacing: 12;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.05), 14, 0.2, 0, 3);
+}
+
+.tarjeta-titulo {
+    -fx-font-size: 14.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.tarjeta-subtitulo {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.texto-tenue {
+    -fx-text-fill: -color-fg-muted;
+}
+
+.texto-pequeno {
+    -fx-font-size: 11.5px;
+}
+
+.texto-fuerte {
+    -fx-font-weight: bold;
+}
+
+/* KPI */
+.kpi {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 14;
+    -fx-border-color: -color-border-muted;
+    -fx-border-radius: 14;
+    -fx-padding: 16 18 16 18;
+    -fx-spacing: 6;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.05), 14, 0.2, 0, 3);
+}
+
+.kpi-icono {
+    -fx-background-radius: 10;
+    -fx-min-width: 38;
+    -fx-min-height: 38;
+    -fx-max-width: 38;
+    -fx-max-height: 38;
+}
+
+.kpi-icono .ikonli-font-icon {
+    -fx-icon-size: 18px;
+}
+
+.kpi-valor {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.kpi-rotulo {
+    -fx-font-size: 12px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.tono-turquesa { -fx-background-color: rgba(13, 148, 136, 0.13); }
+.tono-turquesa .ikonli-font-icon { -fx-icon-color: #0d9488; }
+.tono-azul { -fx-background-color: rgba(37, 99, 235, 0.12); }
+.tono-azul .ikonli-font-icon { -fx-icon-color: #2563eb; }
+.tono-ambar { -fx-background-color: rgba(217, 119, 6, 0.13); }
+.tono-ambar .ikonli-font-icon { -fx-icon-color: #d97706; }
+.tono-violeta { -fx-background-color: rgba(124, 58, 237, 0.12); }
+.tono-violeta .ikonli-font-icon { -fx-icon-color: #7c3aed; }
+.tono-rojo { -fx-background-color: rgba(220, 38, 38, 0.12); }
+.tono-rojo .ikonli-font-icon { -fx-icon-color: #dc2626; }
+
+/* Avatar con iniciales */
+.avatar {
+    -fx-background-radius: 999;
+    -fx-alignment: CENTER;
+}
+
+.avatar .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Chips */
+.chip {
+    -fx-background-radius: 999;
+    -fx-padding: 3 10 3 10;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-background-color: -color-neutral-muted;
+    -fx-text-fill: -color-fg-default;
+}
+
+.chip .ikonli-font-icon {
+    -fx-icon-size: 12px;
+}
+
+.chip.peligro {
+    -fx-background-color: rgba(220, 38, 38, 0.12);
+    -fx-text-fill: #b91c1c;
+}
+
+.chip.peligro .ikonli-font-icon { -fx-icon-color: #b91c1c; }
+
+.chip.alerta {
+    -fx-background-color: rgba(217, 119, 6, 0.14);
+    -fx-text-fill: #b45309;
+}
+
+.chip.alerta .ikonli-font-icon { -fx-icon-color: #b45309; }
+
+.chip.exito {
+    -fx-background-color: rgba(22, 163, 74, 0.13);
+    -fx-text-fill: #15803d;
+}
+
+.chip.info {
+    -fx-background-color: rgba(13, 148, 136, 0.13);
+    -fx-text-fill: #0f766e;
+}
+
+.chip.neutro {
+    -fx-background-color: -color-neutral-muted;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.app.dark .chip.peligro { -fx-text-fill: #fca5a5; }
+.app.dark .chip.peligro .ikonli-font-icon { -fx-icon-color: #fca5a5; }
+.app.dark .chip.alerta { -fx-text-fill: #fcd34d; }
+.app.dark .chip.alerta .ikonli-font-icon { -fx-icon-color: #fcd34d; }
+.app.dark .chip.exito { -fx-text-fill: #86efac; }
+.app.dark .chip.info { -fx-text-fill: #5eead4; }
+
+/* Botones */
+.button.primario {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9;
+    -fx-border-color: transparent;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+
+.button.primario .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+
+.button.primario:hover {
+    -fx-background-color: -dv-marca-oscura;
+}
+
+.button.secundario {
+    -fx-background-radius: 9;
+    -fx-padding: 8 14 8 14;
+    -fx-cursor: hand;
+}
+
+.button.icono {
+    -fx-background-radius: 8;
+    -fx-padding: 7;
+    -fx-cursor: hand;
+}
+
+/* Tablas */
+.tabla {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+}
+
+.tabla .table-row-cell {
+    -fx-cell-size: 46px;
+}
+
+.tabla .column-header .label {
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.buscador {
+    -fx-background-radius: 10;
+    -fx-pref-height: 38;
+    -fx-font-size: 13.5px;
+}
+
+/* ============================== LOGIN ============================== */
+
+.login-escenario {
+    -fx-background-color: radial-gradient(center 35% 45%, radius 80%, #16263f 0%, #0a101c 70%);
+}
+
+.login-titulo {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.login-titulo-3d {
+    -fx-font-size: 40px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2dd4bf;
+}
+
+.login-lema {
+    -fx-font-size: 16px;
+    -fx-text-fill: #9fb0c8;
+    -fx-wrap-text: true;
+}
+
+.login-punto {
+    -fx-text-fill: #cbd5e1;
+    -fx-font-size: 13px;
+}
+
+.login-punto .ikonli-font-icon {
+    -fx-icon-color: #2dd4bf;
+    -fx-icon-size: 15px;
+}
+
+.login-panel {
+    -fx-background-color: -color-bg-default;
+    -fx-padding: 48 52 40 52;
+    -fx-spacing: 16;
+    -fx-min-width: 440;
+    -fx-pref-width: 440;
+    -fx-max-width: 440;
+}
+
+.login-bienvenida {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.login-error {
+    -fx-text-fill: #dc2626;
+    -fx-wrap-text: true;
+}
+
+.login-demo {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 10;
+    -fx-padding: 12 14 12 14;
+    -fx-spacing: 6;
+}
+
+.login-demo .hyperlink {
+    -fx-padding: 0;
+    -fx-font-size: 12px;
+}
+
+.campo-rotulo {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.campo-grande {
+    -fx-pref-height: 42;
+    -fx-background-radius: 10;
+    -fx-font-size: 14px;
+}
+
+.boton-grande {
+    -fx-pref-height: 44;
+    -fx-font-size: 14px;
+}
+
+/* ============================ VISOR 3D ============================ */
+
+.escenario-3d {
+    -fx-background-color: radial-gradient(center 50% 42%, radius 78%, #22314b 0%, #0d1524 72%);
+    -fx-background-radius: 16;
+}
+
+.visor-numero {
+    -fx-text-fill: #dbe5f4;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-background-color: rgba(10, 17, 30, 0.55);
+    -fx-background-radius: 6;
+    -fx-padding: 1 5 1 5;
+}
+
+.visor-numero.patologia {
+    -fx-background-color: rgba(220, 38, 38, 0.85);
+    -fx-text-fill: white;
+}
+
+.visor-numero.seleccionado {
+    -fx-background-color: #14b8a6;
+    -fx-text-fill: white;
+    -fx-font-size: 12.5px;
+}
+
+.visor-hover {
+    -fx-background-color: rgba(8, 13, 24, 0.92);
+    -fx-background-radius: 8;
+    -fx-border-color: rgba(45, 212, 191, 0.45);
+    -fx-border-radius: 8;
+    -fx-text-fill: #e2e8f0;
+    -fx-padding: 7 10 7 10;
+    -fx-font-size: 12px;
+    -fx-line-spacing: 2;
+}
+
+.barra-3d {
+    -fx-background-color: rgba(8, 13, 24, 0.72);
+    -fx-background-radius: 12;
+    -fx-padding: 5;
+    -fx-spacing: 2;
+    -fx-alignment: CENTER;
+}
+
+.barra-3d .button,
+.barra-3d .toggle-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-text-fill: #cbd5e1;
+    -fx-padding: 6 10 6 10;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.barra-3d .button .ikonli-font-icon,
+.barra-3d .toggle-button .ikonli-font-icon {
+    -fx-icon-color: #cbd5e1;
+    -fx-icon-size: 15px;
+}
+
+.barra-3d .button:hover,
+.barra-3d .toggle-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+}
+
+.barra-3d .toggle-button:selected {
+    -fx-background-color: rgba(20, 184, 166, 0.28);
+    -fx-text-fill: white;
+}
+
+.barra-3d .toggle-button:selected .ikonli-font-icon {
+    -fx-icon-color: #5eead4;
+}
+
+.barra-3d .separador {
+    -fx-background-color: rgba(255, 255, 255, 0.12);
+    -fx-min-width: 1;
+    -fx-max-width: 1;
+    -fx-min-height: 20;
+}
+
+.linea-tiempo {
+    -fx-background-color: rgba(8, 13, 24, 0.78);
+    -fx-background-radius: 12;
+    -fx-padding: 8 14 8 10;
+    -fx-spacing: 10;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.linea-tiempo .label {
+    -fx-text-fill: #cbd5e1;
+    -fx-font-size: 12px;
+}
+
+.linea-tiempo .fecha {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-min-width: 150;
+}
+
+.linea-tiempo .slider .track {
+    -fx-background-color: rgba(255, 255, 255, 0.18);
+}
+
+.linea-tiempo .slider .thumb {
+    -fx-background-color: #14b8a6;
+}
+
+.linea-tiempo .slider .axis {
+    -fx-tick-label-fill: #7c8aa3;
+}
+
+.linea-tiempo .slider .axis .axis-tick-mark,
+.linea-tiempo .slider .axis .axis-minor-tick-mark {
+    -fx-stroke: rgba(255, 255, 255, 0.35);
+}
+
+.linea-tiempo .button {
+    -fx-background-color: rgba(20, 184, 166, 0.25);
+    -fx-background-radius: 999;
+    -fx-padding: 6;
+    -fx-cursor: hand;
+}
+
+.linea-tiempo .button .ikonli-font-icon {
+    -fx-icon-color: #5eead4;
+}
+
+.aviso-historico {
+    -fx-background-color: rgba(217, 119, 6, 0.92);
+    -fx-background-radius: 999;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 6 14 6 14;
+    -fx-font-size: 12px;
+}
+
+.aviso-historico .ikonli-font-icon {
+    -fx-icon-color: white;
+}
+
+/* ============================ FICHA ============================ */
+
+.cabecera-ficha {
+    -fx-background-color: -color-bg-default;
+    -fx-border-color: transparent transparent -color-border-muted transparent;
+    -fx-padding: 14 22 14 22;
+    -fx-spacing: 14;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.ficha-nombre {
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.pestanas {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 10;
+    -fx-padding: 3;
+    -fx-spacing: 2;
+}
+
+.pestanas .toggle-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-padding: 7 14 7 14;
+    -fx-text-fill: -color-fg-muted;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+}
+
+.pestanas .toggle-button .ikonli-font-icon {
+    -fx-icon-color: -color-fg-muted;
+}
+
+.pestanas .toggle-button:selected {
+    -fx-background-color: -color-bg-default;
+    -fx-text-fill: -color-fg-default;
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.12), 6, 0.1, 0, 1);
+}
+
+.pestanas .toggle-button:selected .ikonli-font-icon {
+    -fx-icon-color: -color-accent-fg;
+}
+
+/* Paleta de herramientas */
+.paleta {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 14;
+    -fx-border-color: -color-border-muted;
+    -fx-border-radius: 14;
+    -fx-padding: 14 10 14 10;
+    -fx-spacing: 3;
+    -fx-min-width: 206;
+    -fx-pref-width: 206;
+    -fx-max-width: 206;
+}
+
+.paleta .toggle-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 9;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 7 9 7 9;
+    -fx-graphic-text-gap: 10;
+    -fx-text-fill: -color-fg-default;
+    -fx-max-width: infinity;
+    -fx-cursor: hand;
+    -fx-border-width: 0;
+    -fx-font-size: 12.5px;
+}
+
+.paleta .toggle-button:hover {
+    -fx-background-color: -color-bg-subtle;
+}
+
+.paleta .toggle-button:selected {
+    -fx-background-color: -color-accent-subtle;
+    -fx-text-fill: -color-accent-fg;
+    -fx-font-weight: bold;
+}
+
+.paleta .atajo {
+    -fx-text-fill: -color-fg-subtle;
+    -fx-font-size: 10.5px;
+}
+
+.muestra-color {
+    -fx-background-radius: 5;
+    -fx-min-width: 16;
+    -fx-min-height: 16;
+    -fx-max-width: 16;
+    -fx-max-height: 16;
+    -fx-border-color: rgba(0, 0, 0, 0.12);
+    -fx-border-radius: 5;
+}
+
+/* Panel de pieza */
+.panel-pieza {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 14;
+    -fx-border-color: -color-border-muted;
+    -fx-border-radius: 14;
+    -fx-padding: 16;
+    -fx-spacing: 12;
+    -fx-min-width: 290;
+    -fx-pref-width: 290;
+    -fx-max-width: 290;
+}
+
+.pieza-numero {
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.pieza-nombre {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+    -fx-wrap-text: true;
+}
+
+.fila-cara {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 3 0 3 0;
+}
+
+.historial-item {
+    -fx-spacing: 2;
+    -fx-padding: 8 10 8 10;
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 9;
+}
+
+.vacio {
+    -fx-alignment: CENTER;
+    -fx-spacing: 8;
+    -fx-padding: 30;
+}
+
+.vacio .ikonli-font-icon {
+    -fx-icon-size: 36px;
+    -fx-icon-color: -color-fg-subtle;
+}
+
+.leyenda {
+    -fx-hgap: 14;
+    -fx-vgap: 6;
+}
+
+.leyenda .label {
+    -fx-font-size: 11.5px;
+    -fx-text-fill: -color-fg-muted;
+}
+
+/* Plan / totales */
+.total-caja {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 12;
+    -fx-padding: 12 16 12 16;
+    -fx-spacing: 2;
+}
+
+.total-valor {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.total-valor.acento {
+    -fx-text-fill: -color-accent-fg;
+}
+
+.progress-bar.avance > .bar {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 999;
+}
+
+/* Historial (línea de tiempo vertical) */
+.hito {
+    -fx-spacing: 14;
+}
+
+.hito-punto {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 999;
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+}
+
+.hito-linea {
+    -fx-background-color: -color-border-default;
+    -fx-min-width: 2;
+    -fx-max-width: 2;
+}
+
+/* Diálogos */
+.dialogo {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 16;
+    -fx-padding: 24;
+    -fx-spacing: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.30), 40, 0.2, 0, 12);
+}
+
+.dialogo-titulo {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.dialogo-error {
+    -fx-background-color: rgba(220, 38, 38, 0.10);
+    -fx-background-radius: 8;
+    -fx-text-fill: #b91c1c;
+    -fx-padding: 8 10 8 10;
+    -fx-wrap-text: true;
+}
+
+.app.dark .dialogo-error {
+    -fx-text-fill: #fca5a5;
+}
+
+.toast {
+    -fx-background-radius: 12;
+}
+
+/* Scroll más discreto */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+/* ============================== AGENDA ============================== */
+
+.agenda-dia {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-default;
+}
+
+.agenda-dia-hoy {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-color: -color-accent-emphasis;
+    -fx-background-radius: 999;
+    -fx-padding: 2 10 2 10;
+}
+
+.agenda-columna,
+.agenda-columna-hoy {
+    -fx-border-color: transparent transparent transparent -color-border-muted;
+}
+
+.agenda-columna-hoy {
+    -fx-background-color: -color-accent-subtle;
+}
+
+.agenda-libre {
+    -fx-border-color: transparent transparent -color-border-muted transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.agenda-libre:hover {
+    -fx-background-color: rgba(13, 148, 136, 0.10);
+}
+
+.agenda-pasado {
+    -fx-border-color: transparent transparent -color-border-muted transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-background-color: rgba(148, 163, 184, 0.06);
+}
+
+.agenda-cerrado {
+    -fx-background-color: linear-gradient(from 0px 0px to 7px 7px, repeat, rgba(148,163,184,0.16) 50%, transparent 50%);
+}
+
+.agenda-ahora {
+    -fx-background-color: #ef4444;
+    -fx-min-height: 2;
+    -fx-max-height: 2;
+}
+
+.agenda-cita {
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 0 0 0 4;
+    -fx-padding: 3 7 3 7;
+    -fx-cursor: hand;
+}
+
+.agenda-cita:hover {
+    -fx-effect: dropshadow(gaussian, rgba(15, 23, 42, 0.25), 8, 0.2, 0, 2);
+}
+
+.agenda-cita-titulo {
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f172a;
+}
+
+.agenda-cita-texto {
+    -fx-font-size: 11px;
+    -fx-text-fill: #334155;
+}
+
+.hora-libre {
+    -fx-background-radius: 8;
+    -fx-padding: 5 10 5 10;
+    -fx-font-size: 12px;
+    -fx-cursor: hand;
+}
+
+.hora-libre:selected {
+    -fx-background-color: -color-accent-emphasis;
+    -fx-text-fill: white;
+}
+
+.cita-tarjeta {
+    -fx-background-color: -color-bg-subtle;
+    -fx-background-radius: 12;
+    -fx-padding: 12 14 12 14;
+    -fx-spacing: 12;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+}
+
+.cita-fecha {
+    -fx-background-color: -color-bg-default;
+    -fx-background-radius: 10;
+    -fx-border-color: -color-border-muted;
+    -fx-border-radius: 10;
+    -fx-padding: 6 12 6 12;
+    -fx-alignment: CENTER;
+    -fx-min-width: 64;
+}
+
+.cita-fecha .dia {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-accent-fg;
+}
+
+.cita-fecha .mes {
+    -fx-font-size: 10.5px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-fg-muted;
+}
+
+.proxima-cita {
+    -fx-background-color: linear-gradient(to right, #0f766e, #0d9488);
+    -fx-background-radius: 16;
+    -fx-padding: 20 24 20 24;
+    -fx-spacing: 6;
+}
+
+.proxima-cita .label {
+    -fx-text-fill: white;
+}
+
+
+/* Textos del odontograma 2D legibles en modo oscuro. */
+.app.dark .o2d-numero {
+    -fx-fill: #cbd5e1;
+}
