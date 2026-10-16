@@ -182,6 +182,10 @@ public class DatosDemo implements CommandLineRunner {
                         continue;
                     }
                     LocalDateTime inicio = fecha.atTime(h);
+                    // Quien ya terminó su plan no tiene citas por venir: queda "para dar de alta".
+                    if (inicio.isAfter(ahora) && itemsPlan.findByPacienteAndEstado(p, EstadoItem.PENDIENTE).isEmpty()) {
+                        continue;
+                    }
                     ItemPlan item = r.nextBoolean() ? itemsPlan.findByPacienteAndEstado(p, EstadoItem.PENDIENTE).stream()
                             .findFirst().orElse(null) : null;
                     com.dentavista.modelo.EstadoCita estado;
@@ -226,8 +230,10 @@ public class DatosDemo implements CommandLineRunner {
             if (realizado.signum() == 0) {
                 continue;
             }
-            // Entre el 60 % y el 100 % de lo realizado, en dos abonos.
-            double fraccion = 0.6 + r.nextInt(5) * 0.1;
+            // Quien terminó todo su plan lo pagó completo (queda "para dar de alta");
+            // el resto, entre el 60 % y el 100 % de lo realizado, en dos abonos.
+            boolean terminado = itemsPlan.findByPacienteAndEstado(p, EstadoItem.PENDIENTE).isEmpty();
+            double fraccion = terminado ? 1.0 : 0.6 + r.nextInt(5) * 0.1;
             java.math.BigDecimal total = realizado.multiply(java.math.BigDecimal.valueOf(fraccion))
                     .setScale(0, java.math.RoundingMode.DOWN);
             java.math.BigDecimal primero = total.multiply(new java.math.BigDecimal("0.6")).setScale(0, java.math.RoundingMode.DOWN);

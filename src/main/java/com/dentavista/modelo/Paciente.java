@@ -96,10 +96,6 @@ public class Paciente {
         return fechaNacimiento == null ? null : Period.between(fechaNacimiento, LocalDate.now()).getYears();
     }
 
-    public boolean tieneAlertaMedica() {
-        return (alergias != null && !alergias.isBlank()) || (antecedentes != null && !antecedentes.isBlank());
-    }
-
     public String iniciales() {
         return iniciales(nombres + " " + apellidos);
     }

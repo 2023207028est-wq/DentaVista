@@ -19,13 +19,46 @@ public class PacienteService {
 
     private final PacienteRepository pacientes;
     private final ConsultaRepository consultas;
+    private final PagoService pagos;
+    private final com.dentavista.repositorio.ItemPlanRepository items;
+    private final com.dentavista.repositorio.CitaRepository citas;
+    private final com.dentavista.repositorio.UsuarioRepository usuarios;
     private final Validacion validacion;
     private final SesionService sesion;
 
     @Transactional(readOnly = true)
     public List<Paciente> buscar(String texto) {
         sesion.exigirPersonal();
-        return pacientes.buscar(texto == null ? "" : texto.trim());
+        return pacientes.buscar(texto == null ? "" : texto.trim(), true);
+    }
+
+    /** Pacientes dados de baja (archivados). */
+    @Transactional(readOnly = true)
+    public List<Paciente> archivados(String texto) {
+        sesion.exigirPersonal();
+        return pacientes.buscar(texto == null ? "" : texto.trim(), false);
+    }
+
+    /**
+     * Pacientes que ya no necesitan nada: terminaron todo su plan, lo pagaron y no
+     * tienen citas por venir. Son los candidatos a archivar.
+     */
+    @Transactional(readOnly = true)
+    public List<Paciente> paraDarDeAlta() {
+        sesion.exigirPersonal();
+        java.util.Set<Long> conPendientes = new java.util.HashSet<>();
+        items.pendientesPorPaciente().forEach(f -> conPendientes.add(((Number) f[0]).longValue()));
+        LocalDateTime ahora = LocalDateTime.now();
+        java.util.Set<Long> conCita = new java.util.HashSet<>();
+        citas.findByInicioBetweenOrderByInicioAsc(ahora, ahora.plusYears(2)).stream()
+                .filter(c -> c.getEstado().abierta())
+                .forEach(c -> conCita.add(c.getPaciente().getId()));
+        return pagos.saldos().entrySet().stream()
+                .filter(e -> e.getValue().signum() <= 0 && !conPendientes.contains(e.getKey()) && !conCita.contains(e.getKey()))
+                .map(e -> pacientes.findById(e.getKey()).orElse(null))
+                .filter(p -> p != null && p.isActivo())
+                .sorted(java.util.Comparator.comparing(Paciente::getApellidos).thenComparing(Paciente::getNombres))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -53,11 +86,44 @@ public class PacienteService {
         return pacientes.save(p);
     }
 
-    /** Baja lógica: la historia clínica se conserva por obligación legal. */
-    public void archivar(Paciente p) {
+    /**
+     * Da de baja a un paciente que ya no necesita atención. Es una baja lógica: su
+     * historia clínica se conserva (obligación legal) y puede reactivarse. Se cancelan
+     * sus citas por venir y se desactiva su acceso. No se archiva a quien aún debe.
+     */
+    public Paciente archivar(Paciente p) {
+        sesion.exigirPersonal();
         Paciente actual = obtener(p.getId());
+        java.math.BigDecimal deuda = pagos.cuenta(actual).deuda();
+        if (deuda.signum() > 0) {
+            throw new NegocioException(actual.nombreCompleto() + " debe S/ " + deuda.setScale(2, java.math.RoundingMode.HALF_UP)
+                    + " por tratamientos realizados. Registra el pago antes de archivarlo.");
+        }
+        LocalDateTime ahora = LocalDateTime.now();
+        citas.findByPacienteOrderByInicioDesc(actual).stream()
+                .filter(c -> c.getEstado().abierta() && c.getInicio().isAfter(ahora))
+                .forEach(c -> {
+                    c.setEstado(com.dentavista.modelo.EstadoCita.CANCELADA);
+                    citas.save(c);
+                });
+        usuarios.findByPaciente(actual).ifPresent(u -> {
+            u.setActivo(false);
+            usuarios.save(u);
+        });
         actual.setActivo(false);
-        pacientes.save(actual);
+        return pacientes.save(actual);
+    }
+
+    /** Vuelve a activar a un paciente archivado (y su acceso, si tenía). */
+    public Paciente reactivar(Paciente p) {
+        sesion.exigirPersonal();
+        Paciente actual = obtener(p.getId());
+        usuarios.findByPaciente(actual).ifPresent(u -> {
+            u.setActivo(true);
+            usuarios.save(u);
+        });
+        actual.setActivo(true);
+        return pacientes.save(actual);
     }
 
     @Transactional(readOnly = true)

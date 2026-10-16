@@ -16,7 +16,7 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
 
     @Query("""
             select p from Paciente p
-            where p.activo = true and (
+            where p.activo = :activo and (
                   :texto = ''
                or lower(p.nombres) like lower(concat('%', :texto, '%'))
                or lower(p.apellidos) like lower(concat('%', :texto, '%'))
@@ -24,5 +24,5 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long> {
                or p.dni like concat('%', :texto, '%'))
             order by p.apellidos, p.nombres
             """)
-    List<Paciente> buscar(@Param("texto") String texto);
+    List<Paciente> buscar(@Param("texto") String texto, @Param("activo") boolean activo);
 }

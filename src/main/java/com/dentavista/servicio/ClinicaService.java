@@ -94,11 +94,6 @@ public class ClinicaService {
                         .build()));
     }
 
-    public Consulta guardarConsulta(Consulta c) {
-        sesion.exigirClinica();
-        return consultas.save(c);
-    }
-
     // -------------------------------------------------------------- registro
 
     /**

@@ -3,7 +3,7 @@ package com.dentavista.modelo;
 /** Ciclo de vida de un tratamiento del plan. */
 public enum EstadoItem {
 
-    PENDIENTE("Pendiente"),
+    PENDIENTE("Por realizar"),
     REALIZADO("Realizado"),
     CANCELADO("Cancelado");
 

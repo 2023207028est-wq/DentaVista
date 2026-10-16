@@ -42,9 +42,12 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Informe odontológico y presupuesto en PDF: datos del paciente con alertas,
- * odontograma 3D (tres vistas) y 2D, hallazgos actuales y plan de tratamiento con
- * importes, listo para imprimir y firmar.
+ * Documentos en PDF, cada uno con un propósito distinto (sin repetir contenido):
+ * <ul>
+ *   <li><b>Informe clínico</b>: odontograma 3D y 2D, hallazgos y consultas. Sin importes.</li>
+ *   <li><b>Presupuesto</b>: tratamientos con importes, lo pagado y el saldo. Sin imágenes.</li>
+ *   <li><b>Recibo</b> (A5) y <b>receta</b> (A5).</li>
+ * </ul>
  */
 @Service
 @RequiredArgsConstructor
@@ -69,15 +72,29 @@ public class PdfService {
         return new Font(Font.HELVETICA, tam, estilo, c);
     }
 
-    public Path generar(Paciente p, Odontograma o, List<ItemPlan> items, PlanService.Totales totales,
-                        PagoService.Cuenta cuenta, Imagenes img) {
+    /** Escribe un documento en el flujo de salida. */
+    @FunctionalInterface
+    interface Escritor {
+        void escribir(OutputStream out) throws DocumentException, IOException;
+    }
+
+    /** Informe clínico: odontograma, hallazgos y consultas (sin importes). */
+    public Path informe(Paciente p, Odontograma o, List<com.dentavista.modelo.Consulta> consultas, Imagenes img) {
+        return guardar("Informe", p, out -> escribirInforme(out, p, o, consultas, img));
+    }
+
+    /** Presupuesto: tratamientos con importes, lo pagado y el saldo por pagar. */
+    public Path presupuesto(Paciente p, List<ItemPlan> items, PlanService.Totales totales, PagoService.Cuenta cuenta) {
+        return guardar("Presupuesto", p, out -> escribirPresupuesto(out, p, items, totales, cuenta));
+    }
+
+    private Path guardar(String tipo, Paciente p, Escritor escritor) {
         try {
-            Path carpeta = carpetaSalida();
-            String nombre = "DentaVista_" + p.getApellidos().split(" ")[0] + "_" + p.getDni() + "_"
+            String nombre = tipo + "_" + p.getApellidos().split(" ")[0] + "_" + p.getDni() + "_"
                     + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")) + ".pdf";
-            Path destino = carpeta.resolve(nombre);
+            Path destino = carpetaSalida().resolve(nombre);
             try (OutputStream out = Files.newOutputStream(destino)) {
-                escribir(out, p, o, items, totales, cuenta, img);
+                escritor.escribir(out);
             }
             return destino;
         } catch (IOException | DocumentException e) {
@@ -94,17 +111,21 @@ public class PdfService {
         return carpeta;
     }
 
-    void escribir(OutputStream out, Paciente p, Odontograma o, List<ItemPlan> items,
-                  PlanService.Totales totales, PagoService.Cuenta cuenta, Imagenes img) throws DocumentException, IOException {
+    private Document abrirA4(OutputStream out, String titulo, Paciente p) throws DocumentException {
         Document doc = new Document(PageSize.A4, 36, 36, 34, 46);
         PdfWriter w = PdfWriter.getInstance(doc, out);
         w.setPageEvent(new Pie());
-        doc.addTitle("Informe odontológico - " + p.nombreCompleto());
+        doc.addTitle(titulo + " - " + p.nombreCompleto());
         doc.addCreator("DentaVista");
         doc.open();
-
-        cabecera(doc);
+        cabecera(doc, titulo.toUpperCase(), "Emitido el " + LocalDateTime.now().format(FECHA_HORA), 15);
         datosPaciente(doc, p);
+        return doc;
+    }
+
+    void escribirInforme(OutputStream out, Paciente p, Odontograma o, List<com.dentavista.modelo.Consulta> consultas,
+                         Imagenes img) throws DocumentException, IOException {
+        Document doc = abrirA4(out, "Informe clínico", p);
 
         titulo(doc, "Odontograma 3D");
         PdfPTable vistas = new PdfPTable(new float[]{1.45f, 1f});
@@ -128,7 +149,18 @@ public class PdfService {
         titulo(doc, "Hallazgos actuales");
         hallazgos(doc, o);
 
-        titulo(doc, "Plan de tratamiento y presupuesto");
+        titulo(doc, "Consultas");
+        consultas(doc, consultas);
+
+        firmas(doc, "Recibí el informe");
+        doc.close();
+    }
+
+    void escribirPresupuesto(OutputStream out, Paciente p, List<ItemPlan> items, PlanService.Totales totales,
+                             PagoService.Cuenta cuenta) throws DocumentException {
+        Document doc = abrirA4(out, "Presupuesto", p);
+
+        titulo(doc, "Plan de tratamiento");
         plan(doc, items, totales, cuenta);
 
         Paragraph validez = new Paragraph("Presupuesto válido por 30 días. Los importes están expresados en soles (S/) "
@@ -136,7 +168,7 @@ public class PdfService {
         validez.setSpacingBefore(8);
         doc.add(validez);
 
-        firmas(doc);
+        firmas(doc, "Acepto el plan y presupuesto");
         doc.close();
     }
 
@@ -281,10 +313,6 @@ public class PdfService {
 
     // ---------------------------------------------------------------- bloques
 
-    private void cabecera(Document doc) throws DocumentException {
-        cabecera(doc, "INFORME ODONTOLÓGICO\nY PRESUPUESTO", "Emitido el " + LocalDateTime.now().format(FECHA_HORA), 15);
-    }
-
     private void cabecera(Document doc, String titulo, String detalle, float tamNombre) throws DocumentException {
         PdfPTable t = new PdfPTable(new float[]{1.3f, 1f});
         t.setWidthPercentage(100);
@@ -415,6 +443,26 @@ public class PdfService {
         doc.add(t);
     }
 
+    private void consultas(Document doc, List<com.dentavista.modelo.Consulta> lista) throws DocumentException {
+        PdfPTable t = new PdfPTable(new float[]{0.9f, 1.4f, 3.7f});
+        t.setWidthPercentage(100);
+        encabezado(t, "Fecha", "Odontólogo", "Motivo y notas");
+        int n = 0;
+        for (com.dentavista.modelo.Consulta c : lista) {
+            fila(t, n++ % 2 == 1, c.getFecha().toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                    c.getOdontologo() == null ? "—" : c.getOdontologo().getNombre(),
+                    c.getMotivo() + (c.getNotas() != null && !c.getNotas().isBlank() ? "\n" + c.getNotas() : ""));
+        }
+        if (n == 0) {
+            PdfPCell c = new PdfPCell(new Phrase("Aún no hay consultas registradas.", f(9, Font.ITALIC, GRIS)));
+            c.setColspan(3);
+            c.setPadding(8);
+            c.setBorderColor(LINEA);
+            t.addCell(c);
+        }
+        doc.add(t);
+    }
+
     private void plan(Document doc, List<ItemPlan> items, PlanService.Totales totales,
                       PagoService.Cuenta cuenta) throws DocumentException {
         PdfPTable t = new PdfPTable(new float[]{0.35f, 1.1f, 2.6f, 0.95f, 0.9f});
@@ -490,20 +538,20 @@ public class PdfService {
         }
     }
 
-    private void firmas(Document doc) throws DocumentException {
+    private void firmas(Document doc, String conformidadPaciente) throws DocumentException {
         Usuario u = sesion.getUsuario();
-        if (u != null && u.getRol() == com.dentavista.modelo.Rol.PACIENTE) {
-            u = null; // el paciente descarga su informe: la firma es del odontólogo tratante
+        if (u != null && u.getRol() != com.dentavista.modelo.Rol.ODONTOLOGO) {
+            u = null; // solo firma con su nombre un odontólogo; si lo emite recepción o el paciente, queda genérico
         }
         PdfPTable t = new PdfPTable(new float[]{1, 0.3f, 1});
         t.setWidthPercentage(90);
         t.setSpacingBefore(46);
         t.addCell(firma(u == null ? "Odontólogo tratante" : u.getNombre(),
-                u != null && u.getColegiatura() != null ? u.getColegiatura() : "Odontólogo tratante"));
+                u != null && u.getColegiatura() != null ? u.getColegiatura() : "Firma y sello"));
         PdfPCell vacia = new PdfPCell();
         vacia.setBorder(Rectangle.NO_BORDER);
         t.addCell(vacia);
-        t.addCell(firma("Firma del paciente", "Acepto el plan y presupuesto"));
+        t.addCell(firma("Firma del paciente", conformidadPaciente));
         t.setKeepTogether(true);
         doc.add(t);
     }

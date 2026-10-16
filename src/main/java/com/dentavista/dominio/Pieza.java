@@ -71,10 +71,6 @@ public final class Pieza {
         return posicion(fdi) <= 3;
     }
 
-    public static boolean esMolar(int fdi) {
-        return posicion(fdi) >= 6;
-    }
-
     /** Nombre corto: "Primer molar". */
     public static String nombreTipo(int fdi) {
         return NOMBRES[posicion(fdi)];

@@ -21,7 +21,6 @@ import javafx.scene.PointLight;
 import javafx.scene.SceneAntialiasing;
 import javafx.scene.SubScene;
 import javafx.scene.control.Label;
-import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -345,10 +344,6 @@ public class VisorDental3D extends StackPane {
         if (fdi != null) {
             repintar(fdi);
         }
-    }
-
-    public Integer getSeleccionada() {
-        return seleccionada;
     }
 
     /** Clic sobre una pieza: (fdi, cara pulsada). */
@@ -681,8 +676,4 @@ public class VisorDental3D extends StackPane {
         }
     }
 
-    /** Imagen del visor (para el PDF del presupuesto y la ficha). */
-    public Image capturar() {
-        return subEscena.snapshot(null, null);
-    }
 }

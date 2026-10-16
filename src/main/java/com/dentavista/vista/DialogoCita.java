@@ -57,7 +57,17 @@ public class DialogoCita {
     private final Notificador notificador;
 
     public void abrir(Sugerencia s, Consumer<Cita> alGuardar) {
+        mostrar(s, null, alGuardar);
+    }
+
+    /** Mismo formulario, con la cita actual precargada: se elige nuevo día, hora u odontólogo. */
+    public void reprogramar(Cita cita, Consumer<Cita> alGuardar) {
+        mostrar(new Sugerencia(cita.getPaciente(), cita.getOdontologo(), cita.getInicio(), cita.getItemPlan()), cita, alGuardar);
+    }
+
+    private void mostrar(Sugerencia s, Cita existente, Consumer<Cita> alGuardar) {
         boolean esPaciente = sesion.esPaciente();
+        boolean reprogramando = existente != null;
         Paciente fijo = esPaciente ? sesion.pacientePropio() : s.paciente();
 
         ComboBox<Paciente> paciente = new ComboBox<>();
@@ -100,7 +110,7 @@ public class DialogoCita {
             b.setUserData(m);
             b.setToggleGroup(gDur);
             b.getStyleClass().add(m == 30 ? "left-pill" : m == 90 ? "right-pill" : "center-pill");
-            if (m == 30) {
+            if (m == (reprogramando ? existente.getDuracion() : 30)) {
                 b.setSelected(true);
             }
             duraciones.getChildren().add(b);
@@ -123,7 +133,7 @@ public class DialogoCita {
         cargarTratamientos.run();
         paciente.valueProperty().addListener((o, a, b) -> cargarTratamientos.run());
 
-        TextField motivo = new TextField();
+        TextField motivo = new TextField(reprogramando ? existente.getMotivo() : null);
         motivo.setPromptText(esPaciente ? "Cuéntanos qué necesitas (opcional)" : "Motivo (opcional)");
 
         FlowPane horas = new FlowPane(6, 6);
@@ -138,7 +148,7 @@ public class DialogoCita {
                 sinHoras.setText("Elige odontólogo y fecha.");
                 return;
             }
-            List<LocalTime> libres = citas.horariosLibres(od, dia, dur);
+            List<LocalTime> libres = citas.horariosLibres(od, dia, dur, existente);
             sinHoras.setText(libres.isEmpty()
                     ? "No hay horarios libres ese día. Prueba con otra fecha u odontólogo."
                     : libres.size() + " horarios libres · " + Formato.fechaLarga(dia.atStartOfDay()));
@@ -173,25 +183,39 @@ public class DialogoCita {
         g.add(Ui.campo("Duración", duraciones), 0, 2, 2, 1);
         VBox bloqueHoras = new VBox(6, horas, sinHoras);
         g.add(Ui.campo("Horario libre", bloqueHoras), 0, 3, 2, 1);
-        g.add(Ui.campo("Tratamiento del plan", tratamiento), 0, 4, 2, 1);
-        g.add(Ui.campo("Motivo", motivo), 0, 5, 2, 1);
+        if (!reprogramando) {
+            g.add(Ui.campo("Tratamiento del plan", tratamiento), 0, 4, 2, 1);
+            g.add(Ui.campo("Motivo", motivo), 0, 5, 2, 1);
+        }
         javafx.scene.layout.ColumnConstraints c = new javafx.scene.layout.ColumnConstraints();
         c.setPercentWidth(50);
         c.setHgrow(Priority.ALWAYS);
         g.getColumnConstraints().addAll(c, c);
         VBox contenido = new VBox(10, g);
+        if (reprogramando) {
+            contenido.getChildren().add(0, Ui.chip("Cita actual: " + Formato.fechaHora(existente.getInicio()) + " con "
+                    + existente.getOdontologo().getNombre() + " · " + existente.descripcion(), "info", Feather.CALENDAR));
+        }
         if (esPaciente) {
             contenido.getChildren().add(Ui.chip("Tu solicitud quedará \"por confirmar\" hasta que el consultorio la confirme.",
                     "info", Feather.INFO));
         }
 
-        notificador.dialogo(Feather.CALENDAR, esPaciente ? "Pedir una cita" : "Agendar cita", contenido,
-                esPaciente ? "Solicitar cita" : "Agendar", false, () -> {
+        String titulo = reprogramando ? "Reprogramar cita" : esPaciente ? "Pedir una cita" : "Agendar cita";
+        String accion = reprogramando ? "Reprogramar" : esPaciente ? "Solicitar cita" : "Agendar";
+        notificador.dialogo(Feather.CALENDAR, titulo, contenido, accion, false, () -> {
                     if (gHora.getSelectedToggle() == null) {
                         throw new NegocioException("Elige uno de los horarios libres.");
                     }
                     LocalTime h = (LocalTime) gHora.getSelectedToggle().getUserData();
                     int dur = (int) gDur.getSelectedToggle().getUserData();
+                    if (reprogramando) {
+                        Cita cita = citas.reprogramar(existente, odontologo.getValue(), fecha.getValue().atTime(h), dur);
+                        notificador.exito("Cita reprogramada para el " + Formato.fechaHora(cita.getInicio())
+                                + (esPaciente ? ". Queda por confirmar." : " con " + cita.getOdontologo().getNombre() + "."));
+                        alGuardar.accept(cita);
+                        return;
+                    }
                     Cita cita = citas.agendar(paciente.getValue(), odontologo.getValue(), fecha.getValue().atTime(h), dur,
                             motivo.getText(), tratamiento.getValue());
                     notificador.exito((esPaciente ? "Solicitud enviada: " : "Cita agendada: ")

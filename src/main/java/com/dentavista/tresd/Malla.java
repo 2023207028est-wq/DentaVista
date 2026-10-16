@@ -32,10 +32,6 @@ public final class Malla {
         return v.size();
     }
 
-    public int numCaras() {
-        return caras.size();
-    }
-
     public double[] vertice(int i) {
         return v.get(i);
     }

@@ -142,37 +142,36 @@ public class PagoService {
     @Transactional(readOnly = true)
     public List<Deudor> deudores() {
         sesion.exigirPersonal();
-        Map<Long, BigDecimal> pagado = new HashMap<>();
-        for (Object[] f : pagos.pagadoPorPaciente()) {
-            pagado.put(((Number) f[0]).longValue(), (BigDecimal) f[1]);
-        }
         List<Deudor> r = new java.util.ArrayList<>();
-        for (Object[] f : items.realizadoPorPaciente()) {
-            long id = ((Number) f[0]).longValue();
-            BigDecimal deuda = ((BigDecimal) f[1]).subtract(pagado.getOrDefault(id, BigDecimal.ZERO));
+        saldos().forEach((id, deuda) -> {
             if (deuda.signum() > 0) {
                 pacientesRepo.findById(id).filter(Paciente::isActivo).ifPresent(p -> r.add(new Deudor(p, deuda)));
             }
-        }
+        });
         r.sort(java.util.Comparator.comparing(Deudor::deuda).reversed());
         return r;
     }
 
-    /** Suma de las deudas de todos los pacientes (tratamientos hechos y no pagados). */
-    @Transactional(readOnly = true)
+    /** Total que deben los pacientes activos por tratamientos ya realizados. */
     public BigDecimal porCobrar() {
+        return deudores().stream().map(Deudor::deuda).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Saldo de cada paciente con tratamientos realizados: realizado menos pagado
+     * (positivo = debe; cero o negativo = al día).
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, BigDecimal> saldos() {
         Map<Long, BigDecimal> pagado = new HashMap<>();
         for (Object[] f : pagos.pagadoPorPaciente()) {
             pagado.put(((Number) f[0]).longValue(), (BigDecimal) f[1]);
         }
-        BigDecimal total = BigDecimal.ZERO;
+        Map<Long, BigDecimal> r = new HashMap<>();
         for (Object[] f : items.realizadoPorPaciente()) {
-            BigDecimal realizado = (BigDecimal) f[1];
-            BigDecimal deuda = realizado.subtract(pagado.getOrDefault(((Number) f[0]).longValue(), BigDecimal.ZERO));
-            if (deuda.signum() > 0) {
-                total = total.add(deuda);
-            }
+            long id = ((Number) f[0]).longValue();
+            r.put(id, ((BigDecimal) f[1]).subtract(pagado.getOrDefault(id, BigDecimal.ZERO)));
         }
-        return total;
+        return r;
     }
 }

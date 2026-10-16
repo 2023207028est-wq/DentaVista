@@ -30,7 +30,7 @@ import java.util.function.BiConsumer;
  * Odontograma clínico en 2D (norma de registro en papel): cada pieza con su
  * silueta y el diagrama de cinco caras. Vestibular hacia afuera de la boca,
  * mesial hacia la línea media. Está sincronizado con el visor 3D y también se usa
- * para el PDF y para el mapa de calor de la pantalla de inicio.
+ * para el PDF.
  */
 public class Odontograma2D extends Region {
 
@@ -59,7 +59,6 @@ public class Odontograma2D extends Region {
     private final Map<Integer, Celda> celdas = new HashMap<>();
 
     private Odontograma odontograma = Odontograma.vacio();
-    private Map<Integer, Long> mapaCalor;
     private Integer seleccionada;
     private boolean interactivo = true;
     private BiConsumer<Integer, Superficie> alPulsar = (p, s) -> { };
@@ -142,12 +141,6 @@ public class Odontograma2D extends Region {
 
     public void setOdontograma(Odontograma o) {
         this.odontograma = o == null ? Odontograma.vacio() : o;
-        repintarTodo();
-    }
-
-    /** Modo mapa de calor: colorea cada pieza según cuántos casos tiene. */
-    public void setMapaCalor(Map<Integer, Long> mapa) {
-        this.mapaCalor = mapa;
         repintarTodo();
     }
 
@@ -329,7 +322,6 @@ public class Odontograma2D extends Region {
         private final Map<Superficie, Polygon> caras;
         private final Group capaSimbolo = new Group();
         private final Text numero = new Text();
-        private final Text calor = new Text();
         private final double xCuadro;
         private final double yCuadro;
         private Superficie hover;
@@ -392,11 +384,7 @@ public class Odontograma2D extends Region {
                 }
             });
 
-            calor.setFont(Font.font("Segoe UI", FontWeight.BOLD, 11));
-            calor.setFill(Color.WHITE);
-            calor.setMouseTransparent(true);
-
-            raiz.getChildren().addAll(fondo, forma, cuadro, capaSimbolo, numero, calor);
+            raiz.getChildren().addAll(fondo, forma, cuadro, capaSimbolo, numero);
             raiz.setCursor(Cursor.HAND);
         }
 
@@ -420,10 +408,6 @@ public class Odontograma2D extends Region {
             fondo.setFill(sel ? Color.web("#14b8a6", 0.16) : hover != null ? Color.web("#94a3b8", 0.12) : Color.TRANSPARENT);
             fondo.setStroke(sel ? Color.web("#14b8a6") : Color.TRANSPARENT);
 
-            if (mapaCalor != null) {
-                pintarCalor();
-                return;
-            }
             Odontograma.EstadoPieza e = odontograma.pieza(fdi);
             boolean ausente = e.ausente();
             EstadoDental general = e.general();
@@ -449,26 +433,8 @@ public class Odontograma2D extends Region {
                 }
             });
             capaSimbolo.getChildren().setAll(simbolo(general, CUADRO, 0, 0));
-            calor.setText("");
         }
 
-        private void pintarCalor() {
-            long max = mapaCalor.values().stream().mapToLong(Long::longValue).max().orElse(1);
-            long n = mapaCalor.getOrDefault(fdi, 0L);
-            double t = max == 0 ? 0 : (double) n / max;
-            Color c = n == 0 ? Color.web("#f1f5f9") : Color.web("#fde68a").interpolate(Color.web("#dc2626"), t);
-            forma.getStrokeDashArray().clear();
-            forma.setFill(c);
-            forma.setStroke(Color.web("#a8b3c4"));
-            caras.values().forEach(p -> {
-                p.setFill(n == 0 ? Color.WHITE : c.deriveColor(0, 1, 1, 0.85));
-                p.setStroke(BORDE);
-            });
-            capaSimbolo.getChildren().clear();
-            calor.setText(n == 0 ? "" : String.valueOf(n));
-            calor.setX(CELDA / 2 - calor.getLayoutBounds().getWidth() / 2);
-            calor.setY(forma.getLayoutY() + 27);
-        }
     }
 
     /** Nodo raíz dibujado (para capturas sin escalar). */

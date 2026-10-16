@@ -1,0 +1,68 @@
+# Publica el ejecutable de Windows en "Releases" cada vez que se sube una etiqueta vX.Y.Z.
+#   git tag v2.0.0
+#   git push origin v2.0.0
+# GitHub compila, corre las pruebas, arma DentaVista.exe con su propio Java y publica el instalador
+# DentaVista-X.Y.Z-Setup.exe (y una versión portable en ZIP).
+name: Publicar ejecutable
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Compilar y probar
+        run: ./mvnw.cmd -B verify
+
+      - name: Armar el ejecutable (incluye Java, no requiere instalar nada)
+        shell: pwsh
+        run: |
+          $version = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "2.0.0" }
+          New-Item -ItemType Directory -Force build/staging | Out-Null
+          Copy-Item target/dentavista-*.jar build/staging/
+          $jar = (Get-ChildItem build/staging/dentavista-*.jar).Name
+          jpackage --type app-image --name DentaVista --input build/staging --main-jar $jar `
+            --icon build/icono.ico --dest dist --app-version $version --vendor "DentaVista"
+          Compress-Archive -Path dist/DentaVista -DestinationPath "DentaVista-$version-portable.zip"
+          "VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Crear el instalador .exe (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q /DVersion=$env:VERSION /DOrigen=..\dist\DentaVista /DSalida=.. build\instalador.iss
+
+      - name: Adjuntar a la versión
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            DentaVista-*-Setup.exe
+            DentaVista-*-portable.zip
+          body: |
+            **Descarga `DentaVista-…-Setup.exe` y ábrelo**: instala DentaVista con acceso directo en el escritorio y en el menú Inicio.
+            No pide permisos de administrador ni necesita Java (lo trae incluido). Si Windows muestra "Windows protegió su PC", pulsa *Más información → Ejecutar de todas formas*.
+            Alternativa sin instalar: `DentaVista-…-portable.zip` (descomprimir y abrir `DentaVista.exe`). Usuarios de prueba: `dra.paredes` / `dentista123`, `recepcion` / `recepcion123`, `admin` / `admin123`.
+
+      - name: Guardar el ZIP (ejecución manual)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: DentaVista-windows
+          path: |
+            DentaVista-*-Setup.exe
+            DentaVista-*-portable.zip

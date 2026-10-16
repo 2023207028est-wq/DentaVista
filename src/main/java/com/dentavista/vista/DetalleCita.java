@@ -28,6 +28,7 @@ public class DetalleCita {
     private final Notificador notificador;
     private final Navegador navegador;
     private final com.dentavista.servicio.DatosClinica clinica;
+    private final DialogoCita dialogoCita;
 
     public void abrir(Cita c, Runnable alCambiar) {
         Label titulo = Ui.etiqueta(c.getPaciente().nombreCompleto(), "dialogo-titulo");
@@ -84,7 +85,13 @@ public class DetalleCita {
             }
             Button cancelar = Ui.secundario("Cancelar cita", Feather.X_CIRCLE);
             cancelar.setOnAction(e -> accion(() -> citas.cancelar(c), "Cita cancelada: el horario quedó libre.", alCambiar));
-            acciones.getChildren().add(cancelar);
+            Button reprogramar = Ui.secundario("Reprogramar", Feather.REPEAT);
+            Ui.tooltip(reprogramar, "Cambiar fecha, hora u odontólogo");
+            reprogramar.setOnAction(e -> {
+                notificador.cerrar();
+                dialogoCita.reprogramar(c, x -> alCambiar.run());
+            });
+            acciones.getChildren().addAll(cancelar, reprogramar);
             if (sesion.esPersonal() && c.getEstado() == EstadoCita.SOLICITADA) {
                 Button confirmar = Ui.primario("Confirmar", Feather.CHECK);
                 confirmar.setOnAction(e -> accion(() -> citas.confirmar(c), "Cita confirmada.", alCambiar));

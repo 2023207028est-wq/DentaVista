@@ -49,6 +49,22 @@ class CitaServiceTest extends IntegracionBase {
     }
 
     @Test
+    void reprogramarMueveLaCitaYRespetaLosCruces() {
+        Cita c = citas.agendar(paciente, doctor, a(9, 0), 60, "Control", null);
+        // Puede moverse dentro de su propio horario (no choca consigo misma).
+        Cita movida = citas.reprogramar(c, doctor, a(9, 30), 60);
+        assertThat(movida.getInicio()).isEqualTo(a(9, 30));
+        assertThat(citas.horariosLibres(doctor, martes, 60)).doesNotContain(LocalTime.of(9, 30));
+
+        Cita otra = citas.agendar(pacienteNuevo(), doctor, a(11, 0), 30, null, null);
+        assertThatThrownBy(() -> citas.reprogramar(otra, doctor, a(10, 0), 30))
+                .isInstanceOf(NegocioException.class).hasMessageContaining("ya tiene una cita");
+
+        citas.cancelar(otra);
+        assertThatThrownBy(() -> citas.reprogramar(otra, doctor, a(12, 0), 30)).hasMessageContaining("cancelada");
+    }
+
+    @Test
     void unOdontologoNoPuedeTenerDosCitasCruzadas() {
         citas.agendar(paciente, doctor, a(9, 0), 60, null, null);
         Paciente otro = pacienteNuevo();

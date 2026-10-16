@@ -60,14 +60,12 @@ public class InicioVista {
         String nombre = sesion.getUsuario().getNombre();
         Label saludo = Ui.etiqueta(saludo() + ", " + primerNombre(nombre), "titulo-pagina");
         Label fecha = Ui.etiqueta(Formato.fechaLarga(LocalDate.now().atStartOfDay()), "subtitulo-pagina");
-        Button buscar = Ui.secundario("Buscar paciente", Feather.SEARCH);
-        buscar.setOnAction(e -> navegador.irA(Navegador.Seccion.PACIENTES));
         Button cita = Ui.secundario("Nueva cita", Feather.CALENDAR);
         cita.setOnAction(e -> dialogoCita.abrir(new DialogoCita.Sugerencia(null, null, null, null),
                 c -> navegador.irA(Navegador.Seccion.INICIO)));
         Button nuevo = Ui.primario("Nuevo paciente", Feather.USER_PLUS);
         nuevo.setOnAction(e -> FormularioPaciente.abrir(notificador, pacientes, null, navegador::abrirFicha));
-        HBox cab = new HBox(10, new VBox(2, saludo, fecha), Ui.espaciador(), buscar, cita, nuevo);
+        HBox cab = new HBox(10, new VBox(2, saludo, fecha), Ui.espaciador(), cita, nuevo);
         cab.setAlignment(Pos.CENTER_LEFT);
 
         List<Cita> hoy = citas.delDia(LocalDate.now()).stream().filter(c -> c.getEstado() != EstadoCita.CANCELADA).toList();
@@ -86,8 +84,12 @@ public class InicioVista {
                 "Pacientes activos · " + r.consultasMes() + " consultas este mes"), 1, 0);
         kpis.add(kpi(Feather.DOLLAR_SIGN, "tono-violeta", Formato.soles(pagos.cobradoEsteMes()),
                 "Cobrado este mes · " + pagos.pagosEsteMes() + " pagos"), 2, 0);
-        kpis.add(kpi(Feather.ALERT_CIRCLE, "tono-ambar", Formato.soles(pagos.porCobrar()),
-                "Por cobrar (tratamientos hechos y no pagados)"), 3, 0);
+        int alta = pacientes.paraDarDeAlta().size();
+        Node kpiAlta = kpi(Feather.CHECK_CIRCLE, "tono-ambar", String.valueOf(alta),
+                "Para dar de alta · terminaron y pagaron todo");
+        kpiAlta.getStyleClass().add("kpi-enlace");
+        kpiAlta.setOnMouseClicked(e -> navegador.irA(Navegador.Seccion.PACIENTES));
+        kpis.add(kpiAlta, 3, 0);
 
         // Columna izquierda: el día.
         VBox izquierda = new VBox(16, tarjetaCitasHoy(hoy), tarjetaPorAgendar());
@@ -215,7 +217,10 @@ public class InicioVista {
         if (deudores.isEmpty()) {
             lista.getChildren().add(Ui.etiqueta("Nadie tiene saldo pendiente.", "texto-tenue"));
         }
-        return Ui.tarjeta(Ui.cabecera("Saldos pendientes", deudores.size() + " pacientes deben tratamientos realizados"), lista);
+        java.math.BigDecimal total = deudores.stream().map(PagoService.Deudor::deuda)
+                .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        return Ui.tarjeta(Ui.cabecera("Por cobrar · " + Formato.soles(total),
+                deudores.size() + " pacientes deben tratamientos ya realizados"), lista);
     }
 
     private VBox tarjetaConsultas() {

@@ -73,10 +73,14 @@ public class MisCitasVista {
             Label estado = new Label(c.getEstado() == com.dentavista.modelo.EstadoCita.SOLICITADA
                     ? "Solicitud enviada: el consultorio te la confirmará." : "Cita confirmada. Llega 10 minutos antes.");
             estado.setStyle("-fx-opacity: 0.85;");
-            Button cancelar = new Button("Cancelar cita", Ui.icono(Feather.X, 14));
+            Button cambiar = new Button("Reprogramar", Ui.icono(Feather.REPEAT, 14));
+            cambiar.getStyleClass().add("secundario");
+            cambiar.setOnAction(e -> dialogo.reprogramar(c, x -> dibujar()));
+            Button cancelar = new Button("Cancelar", Ui.icono(Feather.X, 14));
             cancelar.getStyleClass().add("secundario");
             cancelar.setOnAction(e -> detalle.abrir(c, this::dibujar));
-            HBox fila = new HBox(12, new VBox(4, new Label("TU PRÓXIMA CITA"), cuando, con, estado), Ui.espaciador(), cancelar);
+            HBox fila = new HBox(12, new VBox(4, new Label("TU PRÓXIMA CITA"), cuando, con, estado), Ui.espaciador(),
+                    new VBox(8, cambiar, cancelar));
             fila.setAlignment(Pos.CENTER_LEFT);
             VBox tarjeta = new VBox(fila);
             tarjeta.getStyleClass().add("proxima-cita");

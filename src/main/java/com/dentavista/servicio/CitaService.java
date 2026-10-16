@@ -134,9 +134,15 @@ public class CitaService {
     /** Horas de inicio libres para un odontólogo en un día y una duración. */
     @Transactional(readOnly = true)
     public List<LocalTime> horariosLibres(Usuario odontologo, LocalDate dia, int duracion) {
+        return horariosLibres(odontologo, dia, duracion, null);
+    }
+
+    /** Igual, pero sin contar la cita que se está reprogramando (su propio horario cuenta como libre). */
+    @Transactional(readOnly = true)
+    public List<LocalTime> horariosLibres(Usuario odontologo, LocalDate dia, int duracion, Cita excluida) {
         List<Cita> ocupadas = citas.findByOdontologoAndInicioBetweenOrderByInicioAsc(odontologo,
                         dia.atStartOfDay(), dia.plusDays(1).atStartOfDay()).stream()
-                .filter(c -> c.getEstado().ocupaHorario()).toList();
+                .filter(c -> c.getEstado().ocupaHorario() && !esLaMisma(c, excluida)).toList();
         LocalDateTime minimo = LocalDateTime.now().plusMinutes(30);
         List<LocalTime> libres = new ArrayList<>();
         for (LocalTime[] t : turnos(dia)) {
@@ -165,6 +171,37 @@ public class CitaService {
         if (p == null) {
             throw new NegocioException("Elige el paciente.");
         }
+        validarHorario(p, odontologo, inicio, duracion, null);
+        return citas.save(Cita.builder()
+                .paciente(p)
+                .odontologo(odontologo)
+                .inicio(inicio)
+                .duracion(duracion)
+                .motivo(motivo == null || motivo.isBlank() ? null : motivo.trim())
+                .itemPlan(item)
+                .estado(sesion.esPaciente() ? EstadoCita.SOLICITADA : EstadoCita.CONFIRMADA)
+                .creadaPor(sesion.nombre())
+                .creadaEn(LocalDateTime.now())
+                .build());
+    }
+
+    /**
+     * Cambia fecha, hora, duración u odontólogo de una cita abierta. Si la reprograma el
+     * paciente vuelve a quedar "por confirmar"; si lo hace el personal queda confirmada.
+     */
+    public Cita reprogramar(Cita c, Usuario odontologo, LocalDateTime inicio, int duracion) {
+        Cita actual = obtener(c);
+        exigirPuedeModificar(actual);
+        validarHorario(actual.getPaciente(), odontologo, inicio, duracion, actual);
+        actual.setOdontologo(odontologo);
+        actual.setInicio(inicio);
+        actual.setDuracion(duracion);
+        actual.setEstado(sesion.esPaciente() ? EstadoCita.SOLICITADA : EstadoCita.CONFIRMADA);
+        return citas.save(actual);
+    }
+
+    /** Fecha futura, dentro del horario y sin cruces para el odontólogo ni para el paciente. */
+    private void validarHorario(Paciente p, Usuario odontologo, LocalDateTime inicio, int duracion, Cita excluida) {
         if (odontologo == null) {
             throw new NegocioException("Elige el odontólogo.");
         }
@@ -184,7 +221,7 @@ public class CitaService {
         LocalDateTime fin = inicio.plusMinutes(duracion);
         citas.findByOdontologoAndInicioBetweenOrderByInicioAsc(odontologo, inicio.toLocalDate().atStartOfDay(),
                         inicio.toLocalDate().plusDays(1).atStartOfDay()).stream()
-                .filter(c -> c.getEstado().ocupaHorario() && c.seCruzaCon(inicio, fin))
+                .filter(c -> c.getEstado().ocupaHorario() && !esLaMisma(c, excluida) && c.seCruzaCon(inicio, fin))
                 .findFirst()
                 .ifPresent(c -> {
                     throw new NegocioException(odontologo.getNombre() + " ya tiene una cita de " + c.getInicio().toLocalTime()
@@ -192,23 +229,31 @@ public class CitaService {
                 });
         citas.findByPacienteAndInicioBetween(p, inicio.toLocalDate().atStartOfDay(), inicio.toLocalDate().plusDays(1).atStartOfDay())
                 .stream()
-                .filter(c -> c.getEstado().ocupaHorario() && c.seCruzaCon(inicio, fin))
+                .filter(c -> c.getEstado().ocupaHorario() && !esLaMisma(c, excluida) && c.seCruzaCon(inicio, fin))
                 .findFirst()
                 .ifPresent(c -> {
                     throw new NegocioException(p.nombreCompleto() + " ya tiene una cita a esa hora ("
                             + c.getInicio().toLocalTime() + ").");
                 });
-        return citas.save(Cita.builder()
-                .paciente(p)
-                .odontologo(odontologo)
-                .inicio(inicio)
-                .duracion(duracion)
-                .motivo(motivo == null || motivo.isBlank() ? null : motivo.trim())
-                .itemPlan(item)
-                .estado(sesion.esPaciente() ? EstadoCita.SOLICITADA : EstadoCita.CONFIRMADA)
-                .creadaPor(sesion.nombre())
-                .creadaEn(LocalDateTime.now())
-                .build());
+    }
+
+    private static boolean esLaMisma(Cita c, Cita otra) {
+        return otra != null && c.getId().equals(otra.getId());
+    }
+
+    /** El personal modifica cualquier cita abierta; el paciente, solo las suyas futuras. */
+    private void exigirPuedeModificar(Cita actual) {
+        if (sesion.esPaciente()) {
+            sesion.exigirAccesoA(actual.getPaciente());
+            if (actual.getInicio().isBefore(LocalDateTime.now())) {
+                throw new NegocioException("La cita ya pasó.");
+            }
+        } else {
+            sesion.exigirPersonal();
+        }
+        if (!actual.getEstado().abierta()) {
+            throw new NegocioException("La cita ya está " + actual.getEstado().getEtiqueta().toLowerCase() + ".");
+        }
     }
 
     public Cita confirmar(Cita c) {
@@ -224,17 +269,7 @@ public class CitaService {
     /** El personal cancela cualquier cita abierta; el paciente, solo las suyas futuras. */
     public Cita cancelar(Cita c) {
         Cita actual = obtener(c);
-        if (sesion.esPaciente()) {
-            sesion.exigirAccesoA(actual.getPaciente());
-            if (actual.getInicio().isBefore(LocalDateTime.now())) {
-                throw new NegocioException("La cita ya pasó.");
-            }
-        } else {
-            sesion.exigirPersonal();
-        }
-        if (!actual.getEstado().abierta()) {
-            throw new NegocioException("La cita ya está " + actual.getEstado().getEtiqueta().toLowerCase() + ".");
-        }
+        exigirPuedeModificar(actual);
         actual.setEstado(EstadoCita.CANCELADA);
         return citas.save(actual);
     }

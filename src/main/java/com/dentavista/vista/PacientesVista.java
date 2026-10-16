@@ -29,7 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-/** Lista de pacientes con búsqueda instantánea por nombre o DNI. */
+/**
+ * Lista de pacientes con búsqueda instantánea por nombre o DNI y tres filtros:
+ * activos, para dar de alta (terminaron y pagaron todo) y archivados.
+ */
 @Component
 @Scope("prototype")
 @RequiredArgsConstructor
@@ -39,7 +42,13 @@ public class PacientesVista {
     private final Notificador notificador;
     private final Navegador navegador;
 
+    /** Qué grupo de pacientes se lista. */
+    enum Filtro { ACTIVOS, ALTA, ARCHIVADOS }
+
     private final TableView<Paciente> tabla = new TableView<>();
+    private Filtro filtro = Filtro.ACTIVOS;
+    private String texto = "";
+    private final javafx.scene.control.ToggleButton botonAlta = new javafx.scene.control.ToggleButton();
     private final Map<Long, LocalDateTime> ultimas = new HashMap<>();
     private final Label contador = new Label();
 
@@ -55,9 +64,12 @@ public class PacientesVista {
         buscar.setPromptText("Buscar por nombre, apellido o DNI…");
         buscar.getStyleClass().add("buscador");
         HBox.setHgrow(buscar, Priority.ALWAYS);
-        buscar.textProperty().addListener((o, a, texto) -> cargar(texto));
+        buscar.textProperty().addListener((o, a, t) -> {
+            texto = t;
+            cargar();
+        });
         contador.getStyleClass().addAll("texto-tenue");
-        HBox barra = new HBox(12, Ui.icono(Feather.SEARCH, 16), buscar, contador);
+        HBox barra = new HBox(12, Ui.icono(Feather.SEARCH, 16), buscar, contador, filtros());
         barra.setAlignment(Pos.CENTER_LEFT);
 
         configurarTabla();
@@ -67,22 +79,83 @@ public class PacientesVista {
 
         VBox pagina = new VBox(18, cab, tarjeta);
         pagina.getStyleClass().add("pagina");
-        cargar("");
+        cargar();
         javafx.application.Platform.runLater(buscar::requestFocus);
         return pagina;
     }
 
-    private void cargar(String texto) {
-        List<Paciente> lista = servicio.buscar(texto);
+    private Node filtros() {
+        javafx.scene.control.ToggleGroup g = new javafx.scene.control.ToggleGroup();
+        javafx.scene.control.ToggleButton activos = new javafx.scene.control.ToggleButton("Activos");
+        botonAlta.setGraphic(Ui.icono(Feather.CHECK_CIRCLE, 14));
+        Ui.tooltip(botonAlta, "Terminaron su plan, lo pagaron y no tienen citas: puedes archivarlos");
+        javafx.scene.control.ToggleButton archivados = new javafx.scene.control.ToggleButton("Archivados", Ui.icono(Feather.ARCHIVE, 14));
+        activos.setUserData(Filtro.ACTIVOS);
+        botonAlta.setUserData(Filtro.ALTA);
+        archivados.setUserData(Filtro.ARCHIVADOS);
+        activos.getStyleClass().add("left-pill");
+        botonAlta.getStyleClass().add("center-pill");
+        archivados.getStyleClass().add("right-pill");
+        for (var t : List.of(activos, botonAlta, archivados)) {
+            t.setToggleGroup(g);
+            t.setMinWidth(javafx.scene.layout.Region.USE_PREF_SIZE);
+        }
+        activos.setSelected(true);
+        g.selectedToggleProperty().addListener((o, a, b) -> {
+            if (b == null) {
+                a.setSelected(true);
+                return;
+            }
+            filtro = (Filtro) b.getUserData();
+            cargar();
+        });
+        return new HBox(activos, botonAlta, archivados);
+    }
+
+    private void cargar() {
+        List<Paciente> alta = servicio.paraDarDeAlta();
+        botonAlta.setText("Para dar de alta (" + alta.size() + ")");
+        String q = texto == null ? "" : texto.trim().toLowerCase();
+        List<Paciente> lista = switch (filtro) {
+            case ACTIVOS -> servicio.buscar(texto);
+            case ARCHIVADOS -> servicio.archivados(texto);
+            case ALTA -> alta.stream().filter(p -> q.isEmpty() || p.nombreCompleto().toLowerCase().contains(q)
+                    || p.getDni().contains(q)).toList();
+        };
         lista.forEach(p -> ultimas.computeIfAbsent(p.getId(), id -> servicio.ultimaVisita(p).orElse(null)));
         tabla.getItems().setAll(lista);
         contador.setText(lista.size() + (lista.size() == 1 ? " paciente" : " pacientes"));
+        tabla.setPlaceholder(switch (filtro) {
+            case ACTIVOS -> Ui.vacio(Feather.USERS, "Sin resultados", "Prueba con otro nombre o registra un paciente nuevo.");
+            case ALTA -> Ui.vacio(Feather.CHECK_CIRCLE, "Nadie para dar de alta",
+                    "Aquí aparecen quienes terminaron y pagaron todo su plan y no tienen citas por venir.");
+            case ARCHIVADOS -> Ui.vacio(Feather.ARCHIVE, "No hay pacientes archivados",
+                    "Al archivar a un paciente su historia clínica se conserva y puedes reactivarlo cuando vuelva.");
+        });
+    }
+
+    private void archivar(Paciente p) {
+        Label info = Ui.etiqueta(p.nombreCompleto() + " dejará de aparecer en la lista, la agenda y los avisos. "
+                + "Su historia clínica, odontograma y pagos se conservan, y puedes reactivarlo cuando vuelva. "
+                + "Sus citas por venir se cancelan y su acceso queda desactivado.", "texto-tenue");
+        info.setWrapText(true);
+        notificador.dialogo(Feather.ARCHIVE, "Archivar paciente", new VBox(info), "Archivar", true, () -> {
+            servicio.archivar(p);
+            notificador.exito(p.nombreCompleto() + " fue archivado.");
+            cargar();
+        }, 480);
+    }
+
+    private void reactivar(Paciente p) {
+        if (notificador.intentar(() -> servicio.reactivar(p))) {
+            notificador.exito(p.nombreCompleto() + " vuelve a estar activo.");
+            cargar();
+        }
     }
 
     private void configurarTabla() {
         tabla.getStyleClass().addAll("tabla", "striped");
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabla.setPlaceholder(Ui.vacio(Feather.USERS, "Sin resultados", "Prueba con otro nombre o registra un paciente nuevo."));
 
         TableColumn<Paciente, Paciente> nombre = columna("Paciente", p -> p);
         nombre.setPrefWidth(300);
@@ -137,7 +210,7 @@ public class PacientesVista {
         visita.setPrefWidth(130);
 
         TableColumn<Paciente, Paciente> acciones = columna("", p -> p);
-        acciones.setPrefWidth(150);
+        acciones.setPrefWidth(200);
         acciones.setCellFactory(c -> new TableCell<>() {
             @Override
             protected void updateItem(Paciente p, boolean vacio) {
@@ -149,7 +222,17 @@ public class PacientesVista {
                 Button abrir = Ui.secundario("Abrir ficha", Feather.ARROW_RIGHT);
                 abrir.setContentDisplay(javafx.scene.control.ContentDisplay.RIGHT);
                 abrir.setOnAction(e -> navegador.abrirFicha(p));
-                setGraphic(abrir);
+                Button extra;
+                if (p.isActivo()) {
+                    extra = Ui.botonIcono(Feather.ARCHIVE, "Archivar (dar de baja)");
+                    extra.setOnAction(e -> archivar(p));
+                } else {
+                    extra = Ui.botonIcono(Feather.ROTATE_CCW, "Reactivar paciente");
+                    extra.setOnAction(e -> reactivar(p));
+                }
+                HBox h = new HBox(6, extra, abrir);
+                h.setAlignment(Pos.CENTER_RIGHT);
+                setGraphic(h);
                 setAlignment(Pos.CENTER_RIGHT);
             }
         });

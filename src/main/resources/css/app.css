@@ -991,3 +991,7 @@
 .app.dark .o2d-numero {
     -fx-fill: #cbd5e1;
 }
+
+.kpi-enlace {
+    -fx-cursor: hand;
+}

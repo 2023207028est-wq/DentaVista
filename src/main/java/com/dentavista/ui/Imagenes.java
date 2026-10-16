@@ -8,9 +8,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
 /**
  * Conversion de imagenes de JavaFX a PNG sin depender del modulo javafx-swing:
  * se copian los pixeles a un {@link BufferedImage} y se codifican con ImageIO.
@@ -38,11 +35,4 @@ public final class Imagenes {
         }
     }
 
-    public static void guardarPng(Image imagen, Path destino) {
-        try {
-            Files.write(destino, aPng(imagen));
-        } catch (IOException e) {
-            throw new UncheckedIOException("No se pudo guardar " + destino, e);
-        }
-    }
 }

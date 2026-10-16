@@ -130,6 +130,11 @@ public class FichaVista {
     private Timeline reproduccion;
     private boolean ajustandoLinea;
     private final TextArea nota = new TextArea();
+    /** Escenario 3D (visor + barra + línea de tiempo); se traslada a una ventana propia en pantalla completa. */
+    private StackPane escenario;
+    private final ToggleButton botonPantallaCompleta = new ToggleButton(null, Ui.icono(Feather.MAXIMIZE, 15));
+    private javafx.stage.Stage ventanaCompleta;
+    private javafx.event.EventHandler<KeyEvent> atajos;
 
     private Node pestanaOdontograma;
     private Node pestanaPlan;
@@ -191,6 +196,9 @@ public class FichaVista {
         Label sub = Ui.etiqueta(String.join("  ·  ", datos), "texto-tenue");
         HBox alertas = new HBox(6);
         alertas.setAlignment(Pos.CENTER_LEFT);
+        if (!paciente.isActivo()) {
+            alertas.getChildren().add(Ui.chip("Archivado", "neutro", Feather.ARCHIVE));
+        }
         if (paciente.getAlergias() != null) {
             Label alergia = Ui.chip("Alergia: " + paciente.getAlergias(), "peligro", Feather.ALERT_OCTAGON);
             // La alergia es información crítica: nunca se recorta.
@@ -229,17 +237,21 @@ public class FichaVista {
             paciente = guardado;
             construirCabecera();
         }));
-        Button exportar = Ui.primario("Informe PDF", Feather.DOWNLOAD);
-        exportar.setOnAction(e -> exportarPdf());
+        Button exportar = Ui.primario("Informe clínico", Feather.DOWNLOAD);
+        Ui.tooltip(exportar, "PDF con el odontograma 3D, los hallazgos y las consultas (el presupuesto está en su pestaña)");
+        exportar.setOnAction(e -> exportarInforme());
 
         boolean esPaciente = sesion.esPaciente();
         Button cita = esPaciente ? Ui.secundario("Pedir cita", Feather.CALENDAR)
                 : Ui.botonIcono(Feather.CALENDAR, "Agendar cita");
         cita.setOnAction(e -> dialogoCita.abrir(new DialogoCita.Sugerencia(paciente, null, null, null), c -> construirCabecera()));
         citas.proxima(paciente).ifPresent(c -> {
-            Label chip = Ui.chip("Próxima cita: " + com.dentavista.ui.Formato.fechaHora(c.getInicio())
+            Label chip = Ui.chip("Cita " + c.getInicio().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm"))
                     + (c.getEstado() == com.dentavista.modelo.EstadoCita.SOLICITADA ? " (por confirmar)" : ""),
                     "info", Feather.CALENDAR);
+            Ui.tooltip(chip, "Próxima cita: " + com.dentavista.ui.Formato.fechaHora(c.getInicio()) + " con "
+                    + c.getOdontologo().getNombre());
+            chip.setMinWidth(Region.USE_PREF_SIZE);
             lineaSub.getChildren().add(chip);
         });
 
@@ -259,9 +271,31 @@ public class FichaVista {
         receta.setManaged(sesion.puedeRegistrarClinica());
         Button acceso = Ui.botonIcono(Feather.KEY, "Acceso del paciente (usuario para ver su odontograma y pedir citas)");
         acceso.setOnAction(e -> dialogoAcceso());
+        Button baja = paciente.isActivo() ? Ui.botonIcono(Feather.ARCHIVE, "Archivar (dar de baja): ya no necesita atención")
+                : Ui.botonIcono(Feather.ROTATE_CCW, "Reactivar paciente");
+        baja.setOnAction(e -> archivarOReactivar());
         cabecera.getChildren().addAll(volver, Ui.avatar(paciente.iniciales(), paciente.getDni(), 46), textos,
-                pestanas, acceso, editar, receta, cita, exportar);
-        fijarAncho(pestanas, acceso, editar, receta, cita, exportar);
+                pestanas, acceso, editar, baja, receta, cita, exportar);
+        fijarAncho(pestanas, acceso, editar, baja, receta, cita, exportar);
+    }
+
+    private void archivarOReactivar() {
+        if (!paciente.isActivo()) {
+            if (notificador.intentar(() -> paciente = pacientes.reactivar(paciente))) {
+                notificador.exito(paciente.nombreCompleto() + " vuelve a estar activo.");
+                construirCabecera();
+            }
+            return;
+        }
+        Label info = Ui.etiqueta(paciente.nombreCompleto() + " dejará de aparecer en la lista, la agenda y los avisos. "
+                + "Su historia clínica se conserva y puedes reactivarlo cuando vuelva. "
+                + "Sus citas por venir se cancelan y su acceso queda desactivado.", "texto-tenue");
+        info.setWrapText(true);
+        notificador.dialogo(Feather.ARCHIVE, "Archivar paciente", new VBox(info), "Archivar", true, () -> {
+            pacientes.archivar(paciente);
+            notificador.exito(paciente.nombreCompleto() + " fue archivado.");
+            navegador.irA(Navegador.Seccion.PACIENTES);
+        }, 480);
     }
 
     /** Botones y pestañas nunca se recortan: si falta espacio se encoge el nombre del paciente. */
@@ -299,7 +333,7 @@ public class FichaVista {
         o2d.setPrefHeight(210);
         o2d.setMinHeight(150);
 
-        StackPane escenario = new StackPane(visor, barra3D(), lineaTiempo(), aviso());
+        escenario = new StackPane(visor, barra3D(), lineaTiempo(), aviso());
         escenario.getStyleClass().add("escenario-3d");
         escenario.setMinHeight(300);
         VBox.setVgrow(escenario, Priority.ALWAYS);
@@ -458,8 +492,11 @@ public class FichaVista {
             }
         });
         Ui.tooltip(enfocar, "Acercar a la pieza seleccionada");
+        Ui.tooltip(botonPantallaCompleta, "Pantalla completa (F11) · Esc para salir");
+        botonPantallaCompleta.setOnAction(e -> pantallaCompleta(botonPantallaCompleta.isSelected()));
 
-        HBox h = new HBox(frontal, sup, inf, der, izq, sep(), abrir, sep(), numeros, encias, giro, enfocar);
+        HBox h = new HBox(frontal, sup, inf, der, izq, sep(), abrir, sep(), numeros, encias, giro, enfocar, sep(),
+                botonPantallaCompleta);
         h.getStyleClass().add("barra-3d");
         h.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         StackPane.setAlignment(h, Pos.TOP_CENTER);
@@ -774,8 +811,13 @@ public class FichaVista {
     }
 
     private void instalarAtajos() {
-        raiz.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+        atajos = e -> {
             if (e.getTarget() instanceof TextInputControl || !tabOdontograma.isSelected()) {
+                return;
+            }
+            if (e.getCode() == KeyCode.F11) {
+                pantallaCompleta(ventanaCompleta == null);
+                e.consume();
                 return;
             }
             if (e.isShortcutDown() && e.getCode() == KeyCode.Z) {
@@ -799,7 +841,65 @@ public class FichaVista {
                     e.consume();
                 }
             }
+        };
+        raiz.addEventFilter(KeyEvent.KEY_PRESSED, atajos);
+    }
+
+    // -------------------------------------------------------- pantalla completa
+
+    /**
+     * Lleva el escenario 3D (con su barra y la línea de tiempo) a una ventana a pantalla
+     * completa, ideal para explicarle el diagnóstico al paciente. Al salir (Esc, F11 o el
+     * botón) vuelve exactamente a su lugar en la ficha.
+     */
+    private void pantallaCompleta(boolean activar) {
+        if (!activar) {
+            if (ventanaCompleta != null) {
+                ventanaCompleta.close();
+            }
+            return;
+        }
+        if (ventanaCompleta != null) {
+            return;
+        }
+        javafx.scene.layout.Pane padre = (javafx.scene.layout.Pane) escenario.getParent();
+        int posicion = padre.getChildren().indexOf(escenario);
+        Node clip = escenario.getClip();
+        padre.getChildren().remove(escenario);
+        escenario.setClip(null);
+
+        javafx.scene.Scene principal = JavaFxApplication.get().ventana().getScene();
+        StackPane contenedor = new StackPane(escenario);
+        contenedor.getStyleClass().setAll(principal.getRoot().getStyleClass());
+        javafx.scene.Scene escena = new javafx.scene.Scene(contenedor);
+        escena.getStylesheets().setAll(principal.getStylesheets());
+        if (atajos != null) {
+            escena.addEventFilter(KeyEvent.KEY_PRESSED, atajos);
+        }
+
+        ventanaCompleta = new javafx.stage.Stage();
+        ventanaCompleta.initOwner(JavaFxApplication.get().ventana());
+        ventanaCompleta.setTitle(paciente.nombreCompleto() + " · Odontograma 3D");
+        ventanaCompleta.getIcons().setAll(JavaFxApplication.get().ventana().getIcons());
+        ventanaCompleta.setScene(escena);
+        ventanaCompleta.setFullScreenExitHint("Pulsa Esc para salir de la pantalla completa");
+        ventanaCompleta.setFullScreen(true);
+        ventanaCompleta.fullScreenProperty().addListener((o, a, completa) -> {
+            if (!completa && ventanaCompleta != null) {
+                ventanaCompleta.close();
+            }
         });
+        ventanaCompleta.setOnHidden(e -> {
+            contenedor.getChildren().remove(escenario);
+            escenario.setClip(clip);
+            padre.getChildren().add(posicion, escenario);
+            ventanaCompleta = null;
+            botonPantallaCompleta.setSelected(false);
+            botonPantallaCompleta.setGraphic(Ui.icono(Feather.MAXIMIZE, 15));
+        });
+        botonPantallaCompleta.setSelected(true);
+        botonPantallaCompleta.setGraphic(Ui.icono(Feather.MINIMIZE, 15));
+        ventanaCompleta.show();
     }
 
     // ------------------------------------------------------------- refrescos
@@ -939,7 +1039,8 @@ public class FichaVista {
         Button agregar = Ui.secundario("Agregar tratamiento", Feather.PLUS);
         agregar.setOnAction(e -> dialogoAgregarTratamiento(piezaSel, caraSel));
         Button exportar = Ui.secundario("Presupuesto PDF", Feather.DOWNLOAD);
-        exportar.setOnAction(e -> exportarPdf());
+        Ui.tooltip(exportar, "PDF con los tratamientos, importes, lo pagado y el saldo");
+        exportar.setOnAction(e -> exportarPresupuesto());
         boolean puede = sesion.puedeRegistrarClinica();
         generar.setDisable(!puede);
         agregar.setDisable(!puede);
@@ -1005,8 +1106,8 @@ public class FichaVista {
                 ? "Realizado " + Formato.fecha(i.getRealizado()) : "Plan " + Formato.fecha(i.getCreado()));
         fecha.setPrefWidth(150);
         TableColumn<ItemPlan, ItemPlan> estado = col("Estado", i -> i);
-        estado.setPrefWidth(110);
-        estado.setMinWidth(110);
+        estado.setPrefWidth(124);
+        estado.setMinWidth(124);
         estado.setCellFactory(c -> new TableCell<>() {
             @Override
             protected void updateItem(ItemPlan i, boolean vacio) {
@@ -1016,7 +1117,7 @@ public class FichaVista {
                     return;
                 }
                 setGraphic(switch (i.getEstado()) {
-                    case PENDIENTE -> Ui.chip("Por hacer", "alerta", Feather.CLOCK);
+                    case PENDIENTE -> Ui.chip(EstadoItem.PENDIENTE.getEtiqueta(), "alerta", Feather.CLOCK);
                     case REALIZADO -> Ui.chip("Realizado", "exito", Feather.CHECK);
                     case CANCELADO -> Ui.chip("Cancelado", "neutro", Feather.X);
                 });
@@ -1104,16 +1205,14 @@ public class FichaVista {
     private void refrescarCuenta() {
         panelCuenta.getChildren().clear();
         PagoService.Cuenta c = pagos.cuenta(paciente);
+        // Un solo número protagonista: lo que debe hoy, o lo que falta pagar del plan.
         boolean debe = c.deuda().signum() > 0;
-        boolean adelanto = c.aFavor().signum() > 0;
         boolean cancelado = c.porPagarDelPlan().signum() == 0 && c.totalPlan().signum() > 0;
-        String rotulo = debe ? "DEBE (TRATAMIENTOS YA REALIZADOS)"
-                : cancelado ? "PLAN PAGADO POR COMPLETO"
-                : adelanto ? "ADELANTO (PAGADO, AÚN NO REALIZADO)" : "AL DÍA · NO DEBE NADA";
-        Label saldo = Ui.etiqueta(Formato.soles(debe ? c.deuda() : cancelado ? c.pagado() : adelanto ? c.aFavor() : c.pagado()), "total-valor");
-        saldo.setStyle(debe ? "-fx-text-fill: #dc2626;" : "-fx-text-fill: #16a34a;");
-        String detalle = cancelado ? "Pagado " + Formato.soles(c.pagado()) + " · nada por pagar"
-                : "Pagado " + Formato.soles(c.pagado()) + " · falta " + Formato.soles(c.porPagarDelPlan()) + " del plan";
+        String rotulo = debe ? "DEBE (TRATAMIENTOS YA REALIZADOS)" : cancelado ? "PLAN PAGADO POR COMPLETO" : "POR PAGAR DEL PLAN";
+        Label saldo = Ui.etiqueta(Formato.soles(debe ? c.deuda() : cancelado ? c.pagado() : c.porPagarDelPlan()), "total-valor");
+        saldo.setStyle(debe ? "-fx-text-fill: #dc2626;" : cancelado ? "-fx-text-fill: #16a34a;" : "");
+        String detalle = "Pagado " + Formato.soles(c.pagado()) + " de " + Formato.soles(c.totalPlan())
+                + (debe || cancelado ? "" : c.aFavor().signum() > 0 ? " · incluye adelanto" : " · al día");
         VBox caja = new VBox(2, Ui.etiqueta(rotulo, "campo-rotulo"), saldo,
                 Ui.etiqueta(detalle, "texto-tenue", "texto-pequeno"));
         caja.getStyleClass().add("total-caja");
@@ -1220,7 +1319,7 @@ public class FichaVista {
                         java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
         tablaPlan.getItems().setAll(items);
         PlanService.Totales t = planes.totales(paciente);
-        PagoService.Cuenta c = pagos.cuenta(paciente);
+        boolean pagado = pagos.cuenta(paciente).porPagarDelPlan().signum() == 0 && t.total().signum() > 0;
         ProgressBar barra = new ProgressBar(t.avance());
         barra.getStyleClass().add("avance");
         barra.setMaxWidth(Double.MAX_VALUE);
@@ -1229,10 +1328,11 @@ public class FichaVista {
         HBox.setHgrow(avance, Priority.ALWAYS);
         avance.setAlignment(Pos.CENTER_LEFT);
         HBox fila = new HBox(14,
-                // "Por pagar" descuenta lo ya cobrado; "Por realizar" es trabajo clínico, no deuda.
-                caja("Por pagar", Formato.soles(c.porPagarDelPlan()), "Pagado " + Formato.soles(c.pagado()), true),
-                caja("Por realizar", Formato.soles(t.pendiente()), t.itemsPendientes() + " tratamientos", false),
-                caja("Total del plan", Formato.soles(t.total()), t.itemsRealizados() + " realizados", false),
+                // Trabajo clínico (no dinero): lo cobrado y lo que falta pagar está en la tarjeta "Pagos".
+                caja("Por realizar", Formato.soles(t.pendiente()),
+                        t.itemsPendientes() + " tratamientos" + (pagado && t.itemsPendientes() > 0 ? " · ya pagados" : ""), true),
+                caja("Realizado", Formato.soles(t.realizado()), t.itemsRealizados() + " tratamientos", false),
+                caja("Total del plan", Formato.soles(t.total()), "", false),
                 avance);
         fila.setAlignment(Pos.CENTER_LEFT);
         totalesPlan.getChildren().setAll(fila);
@@ -1440,7 +1540,7 @@ public class FichaVista {
 
     // ===================================================================== PDF
 
-    private void exportarPdf() {
+    private void exportarInforme() {
         notificador.intentar(() -> {
             Odontograma hoy = clinica.odontograma(paciente);
             PdfService.Imagenes img = new PdfService.Imagenes(
@@ -1448,10 +1548,18 @@ public class FichaVista {
                     Imagenes.aPng(Capturas.vista3D(hoy, VisorDental3D.Vista.SUPERIOR, 760, 520)),
                     Imagenes.aPng(Capturas.vista3D(hoy, VisorDental3D.Vista.INFERIOR, 760, 520)),
                     Imagenes.aPng(Capturas.vista2D(hoy, 1400, 400)));
-            Path archivo = pdf.generar(paciente, hoy, planes.items(paciente), planes.totales(paciente), pagos.cuenta(paciente), img);
-            notificador.exito("Informe guardado en " + archivo.getParent() + ".");
-            JavaFxApplication.get().hostServices().showDocument(archivo.toUri().toString());
+            entregar(pdf.informe(paciente, hoy, clinica.consultasCronologicas(paciente), img), "Informe clínico");
         });
+    }
+
+    private void exportarPresupuesto() {
+        notificador.intentar(() -> entregar(pdf.presupuesto(paciente, planes.items(paciente), planes.totales(paciente),
+                pagos.cuenta(paciente)), "Presupuesto"));
+    }
+
+    private void entregar(Path archivo, String que) {
+        notificador.exito(que + " guardado en " + archivo.getParent() + ".");
+        abrirArchivo(archivo);
     }
 
     private static <T> TableColumn<ItemPlan, T> col(String titulo, Function<ItemPlan, T> valor) {
