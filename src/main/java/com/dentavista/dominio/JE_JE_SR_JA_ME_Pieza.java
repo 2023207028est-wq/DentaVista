@@ -1,0 +1,96 @@
+package com.dentavista.dominio;
+
+import java.util.List;
+import java.util.stream.IntStream;
+
+/**
+ * Utilidades de la notacion dental FDI (dos digitos: cuadrante + posicion).
+ * <pre>
+ *   18 17 16 15 14 13 12 11 | 21 22 23 24 25 26 27 28   (arcada superior)
+ *   48 47 46 45 44 43 42 41 | 31 32 33 34 35 36 37 38   (arcada inferior)
+ * </pre>
+ * El cuadrante 1 es el superior derecho <b>del paciente</b>, que en un odontograma
+ * se dibuja a la izquierda de quien lo mira (el odontologo esta frente al paciente).
+ */
+public final class JE_JE_SR_JA_ME_Pieza {
+
+    /** Fila superior del odontograma, de izquierda a derecha. */
+    public static final List<Integer> FILA_SUPERIOR = List.of(
+            18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28);
+
+    /** Fila inferior del odontograma, de izquierda a derecha. */
+    public static final List<Integer> FILA_INFERIOR = List.of(
+            48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38);
+
+    /** Las 32 piezas permanentes en orden de lectura. */
+    public static final List<Integer> TODAS = IntStream.concat(
+            FILA_SUPERIOR.stream().mapToInt(Integer::intValue),
+            FILA_INFERIOR.stream().mapToInt(Integer::intValue)).boxed().toList();
+
+    private static final String[] NOMBRES = {
+            "", "Incisivo central", "Incisivo lateral", "Canino", "Primer premolar",
+            "Segundo premolar", "Primer molar", "Segundo molar", "Tercer molar"};
+
+    private JE_JE_SR_JA_ME_Pieza() {
+    }
+
+    public static boolean JE_JE_SR_JA_ME_esValida(int fdi) {
+        int c = fdi / 10;
+        int p = fdi % 10;
+        return c >= 1 && c <= 4 && p >= 1 && p <= 8;
+    }
+
+    public static void JE_JE_SR_JA_ME_validar(int fdi) {
+        if (!JE_JE_SR_JA_ME_esValida(fdi)) {
+            throw new IllegalArgumentException("Pieza FDI invalida: " + fdi);
+        }
+    }
+
+    public static int JE_JE_SR_JA_ME_cuadrante(int fdi) {
+        return fdi / 10;
+    }
+
+    /** 1 = incisivo central ... 8 = tercer molar. */
+    public static int JE_JE_SR_JA_ME_posicion(int fdi) {
+        return fdi % 10;
+    }
+
+    public static boolean JE_JE_SR_JA_ME_esSuperior(int fdi) {
+        int c = JE_JE_SR_JA_ME_cuadrante(fdi);
+        return c == 1 || c == 2;
+    }
+
+    /** Lado derecho del paciente (cuadrantes 1 y 4). */
+    public static boolean JE_JE_SR_JA_ME_esDerecha(int fdi) {
+        int c = JE_JE_SR_JA_ME_cuadrante(fdi);
+        return c == 1 || c == 4;
+    }
+
+    /** Incisivos y caninos: su cara masticatoria es un borde (incisal), no una cara oclusal. */
+    public static boolean JE_JE_SR_JA_ME_esAnterior(int fdi) {
+        return JE_JE_SR_JA_ME_posicion(fdi) <= 3;
+    }
+
+    /** Nombre corto: "Primer molar". */
+    public static String JE_JE_SR_JA_ME_nombreTipo(int fdi) {
+        return NOMBRES[JE_JE_SR_JA_ME_posicion(fdi)];
+    }
+
+    /** Nombre completo: "Primer molar superior derecho". */
+    public static String JE_JE_SR_JA_ME_nombre(int fdi) {
+        return JE_JE_SR_JA_ME_nombreTipo(fdi) + " " + (JE_JE_SR_JA_ME_esSuperior(fdi) ? "superior" : "inferior")
+                + " " + (JE_JE_SR_JA_ME_esDerecha(fdi) ? "derecho" : "izquierdo");
+    }
+
+    /** Pieza homologa del otro lado (16 -> 26). */
+    public static int JE_JE_SR_JA_ME_espejo(int fdi) {
+        int c = JE_JE_SR_JA_ME_cuadrante(fdi);
+        int otro = switch (c) {
+            case 1 -> 2;
+            case 2 -> 1;
+            case 3 -> 4;
+            default -> 3;
+        };
+        return otro * 10 + JE_JE_SR_JA_ME_posicion(fdi);
+    }
+}
