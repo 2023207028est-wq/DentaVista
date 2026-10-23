@@ -14,7 +14,7 @@
 <!-- Panel principal: menú lateral oscuro + área de contenido con capas
      para diálogos modales y notificaciones flotantes. -->
 <StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="com.dentavista.vista.MainController" fx:id="raiz" styleClass="app">
+           fx:controller="com.dentavista.vista.JE_JE_SR_JA_ME_MainController" fx:id="raiz" styleClass="app">
 
     <BorderPane>
         <left>
@@ -50,7 +50,7 @@
                         </VBox>
                     </HBox>
                     <HBox spacing="4" alignment="CENTER_LEFT">
-                        <Button fx:id="btnTema" text="Tema" styleClass="boton-panel"/>
+                        <Button fx:id="btnTema" text="JE_JE_SR_JA_ME_Tema" styleClass="boton-panel"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Button fx:id="btnSalir" text="Salir" styleClass="boton-panel"/>
                     </HBox>

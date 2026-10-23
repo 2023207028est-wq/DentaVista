@@ -14,7 +14,7 @@
 <!-- Acceso: a la izquierda la dentadura 3D girando (la "vitrina" del producto),
      a la derecha el formulario. -->
 <HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.dentavista.vista.LoginController" styleClass="app">
+      fx:controller="com.dentavista.vista.JE_JE_SR_JA_ME_LoginController" styleClass="app">
 
     <StackPane fx:id="escenario" styleClass="login-escenario" HBox.hgrow="ALWAYS">
         <VBox fx:id="textos" spacing="14" pickOnBounds="false" StackPane.alignment="TOP_LEFT">
@@ -37,20 +37,20 @@
         <Label text="USUARIO" styleClass="campo-rotulo"/>
         <TextField fx:id="txtUsuario" promptText="tu.usuario" styleClass="campo-grande"/>
         <Label text="CONTRASEÑA" styleClass="campo-rotulo"/>
-        <PasswordField fx:id="txtClave" promptText="••••••••" styleClass="campo-grande" onAction="#ingresar"/>
+        <PasswordField fx:id="txtClave" promptText="••••••••" styleClass="campo-grande" onAction="#JE_JE_SR_JA_ME_ingresar"/>
 
         <Label fx:id="lblError" styleClass="login-error" visible="false" managed="false"/>
 
         <Button fx:id="btnIngresar" text="Ingresar" styleClass="primario,boton-grande" maxWidth="Infinity"
-                defaultButton="true" onAction="#ingresar"/>
+                defaultButton="true" onAction="#JE_JE_SR_JA_ME_ingresar"/>
 
         <Region minHeight="14"/>
         <VBox styleClass="login-demo">
             <Label text="Cuentas de demostración" styleClass="campo-rotulo"/>
-            <Hyperlink text="Dra. Lucía Paredes · odontóloga" onAction="#demoOdontologa"/>
-            <Hyperlink text="Administrador del sistema" onAction="#demoAdmin"/>
-            <Hyperlink text="Milagros Apaza · recepción (agenda y pacientes)" onAction="#demoRecepcion"/>
-            <Hyperlink text="Valeria Quispe · paciente (ve su odontograma y pide citas)" onAction="#demoPaciente"/>
+            <Hyperlink text="Dra. Lucía Paredes · odontóloga" onAction="#JE_JE_SR_JA_ME_demoOdontologa"/>
+            <Hyperlink text="Administrador del sistema" onAction="#JE_JE_SR_JA_ME_demoAdmin"/>
+            <Hyperlink text="Milagros Apaza · recepción (agenda y pacientes)" onAction="#JE_JE_SR_JA_ME_demoRecepcion"/>
+            <Hyperlink text="Valeria Quispe · paciente (ve su odontograma y pide citas)" onAction="#JE_JE_SR_JA_ME_demoPaciente"/>
         </VBox>
         <Region VBox.vgrow="ALWAYS"/>
         <Label text="© 2026 DentaVista · Proyecto académico UNAJ" styleClass="texto-tenue,texto-pequeno"/>

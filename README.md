@@ -65,7 +65,7 @@ Requisitos: **JDK 17 o superior** (probado con JDK 21). Maven viene incluido (`m
 ```
 
 En Windows: `mvnw.cmd javafx:run`. Desde IntelliJ IDEA: abrir la carpeta como proyecto
-Maven y ejecutar `com.dentavista.Launcher`.
+Maven y ejecutar `com.dentavista.JE_JE_SR_JA_ME_Launcher`.
 
 La base de datos `dentavista.db` (SQLite) se crea sola la primera vez con **12 pacientes de
 demostración** con historias de hasta un año (fechas relativas a hoy, la demo nunca
@@ -139,8 +139,10 @@ com.dentavista
 │                EstadoDental y Odontograma (reconstrucción desde los registros)
 ├── modelo       Entidades JPA: Paciente, Consulta, Hallazgo, Tratamiento, ItemPlan, Usuario
 ├── repositorio  Spring Data JPA
-├── servicio     ClinicaService, PlanService, PacienteService, CatalogoService,
-│                UsuarioService, EstadisticaService, PdfService
+├── servicio     JE_JE_SR_JA_ME_ClinicaService, JE_JE_SR_JA_ME_PlanService,
+│                JE_JE_SR_JA_ME_PacienteService, JE_JE_SR_JA_ME_CatalogoService,
+│                JE_JE_SR_JA_ME_UsuarioService, JE_JE_SR_JA_ME_EstadisticaService,
+│                JE_JE_SR_JA_ME_PdfService
 ├── tresd        Motor del odontograma 3D: Malla (OBJ + Catmull-Clark), ModeloDental
 │                (reconocimiento de piezas y caras) y VisorDental3D (componente JavaFX)
 ├── ui           Componentes reutilizables: Odontograma2D, Notificador, Tema, Ui

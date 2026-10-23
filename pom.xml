@@ -114,7 +114,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.dentavista.Launcher</mainClass>
+                    <mainClass>com.dentavista.JE_JE_SR_JA_ME_Launcher</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
@@ -128,7 +128,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>0.0.8</version>
                 <configuration>
-                    <mainClass>com.dentavista.Launcher</mainClass>
+                    <mainClass>com.dentavista.JE_JE_SR_JA_ME_Launcher</mainClass>
                 </configuration>
             </plugin>
         </plugins>
